@@ -1,0 +1,24 @@
+version: '3.5'
+
+services:
+  postgres:
+    container_name: postgres_container_for_eventify
+    image: postgres
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: 1234
+      PGDATA: /data/postgres
+    volumes:
+       - postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    networks:
+      - app_network
+
+volumes:
+    postgres:
+
+networks:
+  app_network:
+    driver: bridge
