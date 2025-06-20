@@ -34,6 +34,23 @@ func main() {
 	eventServ.RegisterRoutes()
 
 	// запускаем сервисы на разных портах при каких то ошибках будем видет подробную информацию
-	logger.GetLoggerFromCtx(ctx).Fatal(ctx, "auth service:", zap.Error(http.ListenAndServe(":8081", authRouter)))
-	logger.GetLoggerFromCtx(ctx).Fatal(ctx, "event service:", zap.Error(http.ListenAndServe(":8082", eventRouter)))
+	//logger.GetLoggerFromCtx(ctx).Fatal(ctx, "auth service:", zap.Error(http.ListenAndServe(":8081", authRouter)))
+	//logger.GetLoggerFromCtx(ctx).Fatal(ctx, "event service:", zap.Error(http.ListenAndServe(":8082", eventRouter)))
+
+	// так как у нас работают сервисы параллельно нужно запускать их по отдельности через горутину
+	go func() {
+		if err := http.ListenAndServe(":8081", authRouter); err != nil {
+			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "auth service failed", zap.Error(err))
+		}
+	}()
+
+	go func() {
+		if err := http.ListenAndServe(":8082", eventRouter); err != nil {
+			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "event service failed", zap.Error(err))
+		}
+	}()
+
+	// Блокируем main, чтобы горутины не завершились
+	select {}
+
 }

@@ -33,7 +33,20 @@ type Participant struct {
 	Username string `json:"username"`
 }
 
-type Event struct {
+type EventReq struct {
+	Title        string        `json:"title"`
+	Description  string        `json:"description"`
+	Category     string        `json:"category"`
+	Location     Location      `json:"location"`
+	StartTime    time.Time     `json:"start_time"`
+	EndTime      time.Time     `json:"end_time"`
+	Organizer    Organizer     `json:"organizer"`
+	Participants []Participant `json:"participants"`
+	Status       string        `json:"status"`
+	CreatedAt    time.Time     `json:"created_at"`
+}
+type EventResp struct {
+	ID           uint          `json:"id"`
 	Title        string        `json:"title"`
 	Description  string        `json:"description"`
 	Category     string        `json:"category"`
