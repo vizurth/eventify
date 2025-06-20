@@ -10,6 +10,7 @@ type Config struct {
 	PostgresConfig postgres.Config `yaml:"POSTGRES" env:"POSTGRES" env-default:"postgres"`
 }
 
+// NewConfig читает yaml файл и записывает все в Config
 func NewConfig() (*Config, error) {
 	var config Config
 	if err := cleanenv.ReadConfig("./config/config.yaml", &config); err != nil {
