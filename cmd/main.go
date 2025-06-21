@@ -6,6 +6,7 @@ import (
 	"github.com/vizurth/eventify/internal/authservice"
 	"github.com/vizurth/eventify/internal/config"
 	"github.com/vizurth/eventify/internal/eventservice"
+	"github.com/vizurth/eventify/internal/userinteractionservice"
 	"github.com/vizurth/eventify/pkg/logger"
 	"github.com/vizurth/eventify/pkg/postgres"
 	"go.uber.org/zap"
@@ -33,6 +34,11 @@ func main() {
 	eventServ := eventservice.NewEventService(pool, eventRouter)
 	eventServ.RegisterRoutes()
 
+	// добавляем eventRouter для userInteractionService
+	userInteractionRouter := gin.Default()
+	userInteractionServ := userInteractionService.NewUserInteractionService(pool, userInteractionRouter)
+	userInteractionServ.RegisterRoutes()
+
 	// запускаем сервисы на разных портах при каких то ошибках будем видет подробную информацию
 	//logger.GetLoggerFromCtx(ctx).Fatal(ctx, "auth service:", zap.Error(http.ListenAndServe(":8081", authRouter)))
 	//logger.GetLoggerFromCtx(ctx).Fatal(ctx, "event service:", zap.Error(http.ListenAndServe(":8082", eventRouter)))
@@ -47,6 +53,12 @@ func main() {
 	go func() {
 		if err := http.ListenAndServe(":8082", eventRouter); err != nil {
 			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "event service failed", zap.Error(err))
+		}
+	}()
+
+	go func() {
+		if err := http.ListenAndServe(":8083", userInteractionRouter); err != nil {
+			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "user interaction service failed", zap.Error(err))
 		}
 	}()
 

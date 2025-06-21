@@ -8,7 +8,7 @@
 Сделано мб, только добавить вывод списка всех пользователей(для admin)
 
 ### User-Interaction-Service
-
+посмотреть нужно ли проверять username c таблицей users или это делается на фронте
 
 
 ### Notification-Service

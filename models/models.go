@@ -1,6 +1,9 @@
 package models
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type LoginStruct struct {
 	Username string `json:"username"`
@@ -43,7 +46,6 @@ type EventReq struct {
 	Organizer    Organizer     `json:"organizer"`
 	Participants []Participant `json:"participants"`
 	Status       string        `json:"status"`
-	CreatedAt    time.Time     `json:"created_at"`
 }
 type EventResp struct {
 	ID           uint          `json:"id"`
@@ -57,4 +59,23 @@ type EventResp struct {
 	Participants []Participant `json:"participants"`
 	Status       string        `json:"status"`
 	CreatedAt    time.Time     `json:"created_at"`
+}
+
+type ReviewReq struct {
+	EventID  uint   `json:"event_id"`
+	UserID   uint   `json:"user_id"`
+	Username string `json:"username"`
+	Rating   uint   `json:"rating"`
+	Comment  string `json:"comment"`
+}
+
+type ReviewResp struct {
+	ID        uint         `json:"id"`
+	EventID   uint         `json:"event_id"`
+	UserID    uint         `json:"user_id"`
+	Username  string       `json:"username"`
+	Rating    uint         `json:"rating"`
+	Comment   string       `json:"comment"`
+	CreatedAt time.Time    `json:"created_at"`
+	UpdatedAt sql.NullTime `json:"updated_at"`
 }

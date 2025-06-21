@@ -36,8 +36,18 @@ func New(ctx context.Context, config Config) (*pgxpool.Pool, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create migration instance: %w", err)
 	}
-	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
-		return nil, fmt.Errorf("failed to run migrations: %w", err)
+	//if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+	//	return nil, fmt.Errorf("failed to run migrations: %w", err)
+	//}
+	if err := m.Up(); err != nil {
+		if errors.Is(err, migrate.ErrNoChange) {
+			fmt.Println("✅ migrations already applied")
+		} else {
+			return nil, fmt.Errorf("migrations doesnt applied: %w", err)
+		}
+	} else {
+		fmt.Println("✅ migrations already applied")
 	}
+
 	return conn, nil
 }
