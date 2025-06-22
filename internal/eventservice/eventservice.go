@@ -205,7 +205,7 @@ func (es *EventService) GetEventById(c *gin.Context) {
 
 // RegisterRoutes собираем все хендлеры в одну функцию
 func (es *EventService) RegisterRoutes() {
-	events := es.router.Group("/events")
+	events := es.router.Group("/")
 	events.POST("/", es.CreateEvent)
 	events.GET("/", es.GetEvents)
 	events.GET("/:id", es.GetEventById)

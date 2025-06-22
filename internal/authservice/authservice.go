@@ -158,7 +158,7 @@ func (a *AuthService) AuthMiddleWare() gin.HandlerFunc {
 
 // RegisterRoutes собираем все хендлеры в одну функцию
 func (a *AuthService) RegisterRoutes() {
-	auth := a.router.Group("/auth")
+	auth := a.router.Group("/")
 	auth.POST("/login", a.LoginHandler)
 	auth.POST("/register", a.RegisterHandler)
 }

@@ -257,18 +257,22 @@ func (UI *UserInteractionService) GetRegistration(c *gin.Context) {
 // RegisterRoutes собираем все хендлеры в одну функцию
 func (UI *UserInteractionService) RegisterRoutes() {
 	// reviews
-	userInteraction := UI.router.Group("/")
+	userInteractionRev := UI.router.Group("/reviews")
 
 	// делаем middleware для проверки регистрации пользователя
-	userInteraction.Use(middleware.AuthMiddleWareDefault(UI.secret))
+	userInteractionRev.Use(middleware.AuthMiddleWareDefault(UI.secret))
 
-	userInteraction.POST("/reviews", UI.CreateNewReviews)
-	userInteraction.GET("/reviews/event/:id", UI.GetCurrentReviewsByEventID)
-	userInteraction.PUT("/reviews/:id", UI.UpdateReview)
-	userInteraction.DELETE("/reviews/:id", UI.DeleteReview)
+	userInteractionRev.POST("/", UI.CreateNewReviews)
+	userInteractionRev.GET("/event/:id", UI.GetCurrentReviewsByEventID)
+	userInteractionRev.PUT("/:id", UI.UpdateReview)
+	userInteractionRev.DELETE("/:id", UI.DeleteReview)
 
 	//registation
-	userInteraction.POST("/registration/event/:id", UI.RegistrationOnEvent)
-	userInteraction.DELETE("/registration/event/:id", UI.DeleteRegistration)
-	userInteraction.GET("/registration/event/:id", UI.GetRegistration)
+	userInteractionRegister := UI.router.Group("/registration")
+
+	userInteractionRegister.Use(middleware.AuthMiddleWareDefault(UI.secret))
+
+	userInteractionRegister.POST("/event/:id", UI.RegistrationOnEvent)
+	userInteractionRegister.DELETE("/event/:id", UI.DeleteRegistration)
+	userInteractionRegister.GET("/event/:id", UI.GetRegistration)
 }
