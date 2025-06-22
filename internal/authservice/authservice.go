@@ -25,10 +25,10 @@ func NewAuthService(db *pgxpool.Pool, router *gin.Engine, secretKey []byte) *Aut
 }
 
 // GenerateToken генерируем JWT из username, email, password, role
-func (a *AuthService) GenerateToken(username, email, password, role string) (string, error) {
+func (a *AuthService) GenerateToken(userID int, username, email, role string) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"user_id":  userID,
 		"username": username,
-		"password": password,
 		"email":    email,
 		"role":     role,
 	})
@@ -106,9 +106,14 @@ func (a *AuthService) LoginHandler(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "wrong password"})
 		return
 	}
+	var userID int
+	if err := a.db.QueryRow(ctx, "SELECT id FROM schema_name.users WHERE username = $1 OR email = $2", loginStruct.Username, loginStruct.Email).Scan(&userID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	//генерируем JWT для дальнейшей работы
-	token, err := a.GenerateToken(loginStruct.Username, loginStruct.Email, loginStruct.Password, loginStruct.Role)
+	token, err := a.GenerateToken(userID, loginStruct.Username, loginStruct.Email, loginStruct.Role)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -1,14 +1,19 @@
-### Event-Service
+### Event-Service +
 Добавить получение всей таблицы из базы данных
 
 
 
-### Auth-Service
+### Auth-Service +
 
 Сделано мб, только добавить вывод списка всех пользователей(для admin)
 
-### User-Interaction-Service
+### User-Interaction-Service + 
 посмотреть нужно ли проверять username c таблицей users или это делается на фронте
 
 
 ### Notification-Service
+
+
+
+### Заметки
+посмотреть и добавить вывод ошибок не только в JSON но и сделать логгирование

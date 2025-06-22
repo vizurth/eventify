@@ -36,7 +36,7 @@ func main() {
 
 	// добавляем eventRouter для userInteractionService
 	userInteractionRouter := gin.Default()
-	userInteractionServ := userInteractionService.NewUserInteractionService(pool, userInteractionRouter)
+	userInteractionServ := userInteractionService.NewUserInteractionService(pool, userInteractionRouter, []byte(cfg.SecretKey))
 	userInteractionServ.RegisterRoutes()
 
 	// запускаем сервисы на разных портах при каких то ошибках будем видет подробную информацию
