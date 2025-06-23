@@ -9,7 +9,6 @@ type LoginStruct struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
-	Role     string `json:"role"`
 }
 
 type RegisterStruct struct {

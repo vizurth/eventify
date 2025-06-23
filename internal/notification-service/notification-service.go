@@ -112,15 +112,18 @@ func (n *NotificationService) DeleteNotification(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "notification delete"})
 }
 
+// NewSubscribe создание новой подписки
+func (n *NotificationService) NewSubscribe(c *gin.Context) {
+
+}
+
 func (n *NotificationService) RegisterRoutes() {
-	notifications := n.router.Group("/")
+	notifications := n.router.Group("/notifications")
 	//notifications.Use(middleware.AuthMiddleWareDefault(n.secret))
 
 	notifications.POST("/send", n.SendNotification)
 	notifications.GET("/user/:id", n.GetUserNotification)
 	notifications.PUT("/:id/read", n.ReadNotification)
 	notifications.DELETE("/:id", n.DeleteNotification)
-
-	//subscriptions := n.router.Group("/subscriptions")
 
 }
