@@ -30,20 +30,8 @@ type RegistrationEvent struct {
 	Username string `json:"username"`
 }
 
-type NotificationToUserReq struct {
-	UserID  uint   `json:"user_id"`
-	Message string `json:"message"`
-}
-
-type NotificationToUserResp struct {
-	Status         string `json:"status"`
-	NotificationID uint   `json:"id"`
-}
-
-type NotificationGetResp struct {
-	NotificationID uint      `json:"id"`
-	UserID         uint      `json:"user_id"`
-	Message        string    `json:"message"`
-	IsRead         bool      `json:"is_read"`
-	CreatedAt      time.Time `json:"created_at"`
+type ParticipantResp struct {
+	EventID  string `json:"event_id"`
+	ID       uint   `json:"id"`
+	Username string `json:"username"`
 }
