@@ -5,9 +5,9 @@ import (
 	"errors"
 	"golang.org/x/crypto/bcrypt"
 	"time"
-	"vizurth/eventify/auth/internal/models"
-	"vizurth/eventify/auth/internal/repository"
-	"vizurth/eventify/common/jwt"
+	"eventify/auth/internal/models"
+	"eventify/auth/internal/repository"
+	"eventify/common/jwt"
 )
 
 type AuthService struct {

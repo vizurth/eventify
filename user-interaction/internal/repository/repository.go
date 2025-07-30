@@ -2,11 +2,9 @@ package repository
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"net/http"
 	"time"
-	"vizurth/eventify/user-interaction/internal/models"
+	"eventify/user-interaction/internal/models"
 )
 
 type UserInteractionRepository struct {
@@ -130,4 +128,6 @@ func (r *UserInteractionRepository) GetRegistrations(ctx context.Context, eventI
 		}
 		*registrations = append(*registrations, temp)
 	}
+
+	return nil
 }

@@ -1,27 +1,10 @@
 package kafka
 
-import (
-	"time"
+const (
+	EventCreated        = "event.created"
+	RegistrationCreated = "registration.created"
+	RegistrationDeleted = "registration.deleted"
+	ReviewCreated       = "review.created"
+	ReviewUpdated       = "review.updated"
+	ReviewDeleted       = "review.deleted"
 )
-
-type OrderCreate struct {
-	EventType string `json:"event_type"`
-	OrderId   int    `json:"order_id"`
-	UserId    int    `json:"user_id"`
-	Status    string `json:"status"`
-}
-
-type OrderStatusUpdate struct {
-	EventType string    `json:"event_type"`
-	OrderID   int       `json:"order_id"`
-	UserId    int       `json:"user_id"`
-	CourierId int       `json:"courier_id"`
-	Status    string    `json:"status"`
-	UpdatedAt time.Time `json:"updated_at"`
-}
-
-type OrderAccept struct {
-	EventType string `json:"event_type"`
-	OrderID   int    `json:"order_id"`
-	Status    string `json:"status"`
-}

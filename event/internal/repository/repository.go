@@ -2,8 +2,8 @@ package repository
 
 import (
 	"context"
+	"eventify/event/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"vizurth/eventify/models"
 )
 
 type EventRepository struct {
@@ -17,7 +17,7 @@ func NewEventRepository(db *pgxpool.Pool) *EventRepository {
 func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) error {
 	//добавляем данные в бд
 	_, err := r.db.Exec(ctx,
-		`INSERT INTO schema_name.event(title, description, category, city, venue, address, start_time, end_time, organizer_id, organizer_name, organizer_email, status)
+		`INSERT INTO schema_name.events(title, description, category, city, venue, address, start_time, end_time, organizer_id, organizer_name, organizer_email, status)
    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
 		req.Title,
 		req.Description,
@@ -36,7 +36,7 @@ func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) 
 		return err
 	}
 	var lastEventID uint
-	query := `SELECT id FROM schema_name.event ORDER BY id DESC LIMIT 1`
+	query := `SELECT id FROM schema_name.events ORDER BY id DESC LIMIT 1`
 
 	err = r.db.QueryRow(ctx, query).Scan(&lastEventID)
 	if err != nil {
@@ -66,7 +66,7 @@ ON CONFLICT DO NOTHING;
 
 func (r *EventRepository) GetEvents(ctx context.Context, events *[]models.EventResp) error {
 	rows, err := r.db.Query(ctx, `
-	SELECT * FROM schema_name.event
+	SELECT * FROM schema_name.events
 	`)
 	if err != nil {
 		return err
@@ -128,7 +128,7 @@ func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *mode
 	           id, title, description, category, city, venue, address,
 	           start_time, end_time, organizer_id, organizer_name, organizer_email,
 	           status, created_at
-	       FROM schema_name.event
+	       FROM schema_name.events
 	       WHERE id = $1
 	   `, eventID).Scan(
 		&e.ID,
@@ -157,4 +157,6 @@ func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *mode
 			e.Participants = append(e.Participants, p)
 		}
 	}
+
+	return nil
 }

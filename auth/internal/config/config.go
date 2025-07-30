@@ -1,9 +1,9 @@
 package config
 
 import (
+	"eventify/common/postgres"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
-	"vizurth/eventify/common/postgres"
 )
 
 type AuthConfig struct {
@@ -21,7 +21,7 @@ func New() (Config, error) {
 	var config Config
 	// docker workdir app/
 	// local workdir delivery-tracker/auth
-	if err := cleanenv.ReadConfig("configs/configs.yaml", &config); err != nil {
+	if err := cleanenv.ReadConfig("configs/config.yaml", &config); err != nil {
 		fmt.Println(err)
 		if err := cleanenv.ReadEnv(&config); err != nil {
 			return Config{}, fmt.Errorf("error reading configs: %w", err)

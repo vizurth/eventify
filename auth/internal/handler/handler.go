@@ -3,8 +3,8 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"net/http"
-	"vizurth/eventify/auth/internal/models"
-	"vizurth/eventify/auth/internal/service"
+	"eventify/auth/internal/models"
+	"eventify/auth/internal/service"
 )
 
 type AuthHandler struct {

@@ -4,8 +4,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	"vizurth/eventify/event/internal/models"
-	"vizurth/eventify/event/internal/service"
+	"eventify/event/internal/models"
+	"eventify/event/internal/service"
 )
 
 type EventHandler struct {
@@ -13,7 +13,7 @@ type EventHandler struct {
 	router  *gin.Engine
 }
 
-func NewEventHandler(service *service.EventService) *EventHandler {
+func NewEventHandler(service *service.EventService, router *gin.Engine) *EventHandler {
 	return &EventHandler{
 		service: service,
 		router:  gin.Default(),

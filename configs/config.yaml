@@ -1,16 +1,17 @@
-secret-key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
-
 auth:
   port: 8081
   migration-path: "file://migrations/auth"
+  secret-key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
 
 event:
   port: 8082
   migration-path: "file://migrations/event"
+  secret-key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
 
 user-interact:
   port: 8083
   migration-path: "file://migrations/user-interact"
+  secret-key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
 
 
 postgres:
@@ -19,5 +20,3 @@ postgres:
   username: "root"
   password: "1234"
   database: "postgres"
-
-

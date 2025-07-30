@@ -1,12 +1,12 @@
 package handler
 
 import (
+	"eventify/common/jwt"
+	"eventify/user-interaction/internal/models"
+	"eventify/user-interaction/internal/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	"vizurth/eventify/internal/middleware"
-	"vizurth/eventify/user-interaction/internal/models"
-	"vizurth/eventify/user-interaction/internal/service"
 )
 
 type UserInteractionHandler struct {
@@ -183,7 +183,7 @@ func (UI *UserInteractionHandler) RegisterRoutes() {
 	userInteractionRev := UI.router.Group("/user-interact")
 
 	// делаем middleware для проверки регистрации пользователя
-	userInteractionRev.Use(middleware.AuthMiddleWareDefault(UI.secret))
+	userInteractionRev.Use(jwt.AuthMiddleware())
 
 	userInteractionRev.POST("/", UI.CreateNewReviews)
 	userInteractionRev.GET("/event/:id", UI.GetCurrentReviewsByEventID)
@@ -193,7 +193,7 @@ func (UI *UserInteractionHandler) RegisterRoutes() {
 	// registation
 	userInteractionRegister := UI.router.Group("/registration")
 
-	userInteractionRegister.Use(middleware.AuthMiddleWareDefault(UI.secret))
+	userInteractionRegister.Use(jwt.AuthMiddleware())
 
 	userInteractionRegister.POST("/event/:id", UI.RegistrationOnEvent)
 	userInteractionRegister.DELETE("/event/:id", UI.DeleteRegistration)

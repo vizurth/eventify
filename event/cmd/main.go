@@ -2,16 +2,18 @@ package main
 
 import (
 	"context"
+	"eventify/common/kafka"
+	"eventify/common/logger"
+	"eventify/common/postgres"
+	"eventify/event/internal/config"
+	"eventify/event/internal/handler"
+	"eventify/event/internal/repository"
+	"eventify/event/internal/service"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"
-	"vizurth/eventify/common/logger"
-	"vizurth/eventify/common/postgres"
-	"vizurth/eventify/event/internal/config"
-	"vizurth/eventify/event/internal/handler"
-	"vizurth/eventify/event/internal/repository"
-	"vizurth/eventify/event/internal/service"
+	"time"
 )
 
 func main() {
@@ -22,6 +24,8 @@ func main() {
 
 	pool, _ := postgres.New(ctx, cfg.Postgres)
 
+	_ = postgres.WaitForPostgres(ctx, cfg.Postgres, 10, 1*time.Second)
+
 	err := postgres.Migrate(ctx, cfg.Postgres, cfg.Event.MigrationPath)
 	if err != nil {
 		logger.GetLoggerFromCtx(ctx).Fatal(ctx, "migration failed", zap.Error(err))
@@ -29,7 +33,11 @@ func main() {
 
 	router := gin.Default()
 	eventRepo := repository.NewEventRepository(pool)
-	eventService := service.NewEventService(eventRepo)
+
+	producer := kafka.NewProducer([]string{"kafka:9092"}, "events")
+	defer producer.Close()
+
+	eventService := service.NewEventService(eventRepo, producer)
 	eventHandler := handler.NewEventHandler(eventService, router)
 
 	eventHandler.RegisterRoutes()

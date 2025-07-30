@@ -2,16 +2,17 @@ package main
 
 import (
 	"context"
+	"eventify/auth/internal/config"
+	"eventify/auth/internal/handler"
+	"eventify/auth/internal/repository"
+	"eventify/auth/internal/service"
+	"eventify/common/logger"
+	"eventify/common/postgres"
 	"fmt"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"
-	"vizurth/eventify/auth/internal/config"
-	"vizurth/eventify/auth/internal/handler"
-	"vizurth/eventify/auth/internal/repository"
-	"vizurth/eventify/auth/internal/service"
-	"vizurth/eventify/common/logger"
-	"vizurth/eventify/common/postgres"
+	"time"
 )
 
 func main() {
@@ -21,6 +22,8 @@ func main() {
 	ctx, _ = logger.New(ctx)
 
 	pool, _ := postgres.New(ctx, cfg.Postgres)
+
+	_ = postgres.WaitForPostgres(ctx, cfg.Postgres, 10, 1*time.Second)
 
 	err := postgres.Migrate(ctx, cfg.Postgres, cfg.Auth.MigrationPath)
 	if err != nil {
