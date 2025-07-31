@@ -23,13 +23,17 @@ services:
   postgres:
     image: postgres:14
     environment:
-      POSTGRES_DB: eventify
       POSTGRES_USER: root
       POSTGRES_PASSWORD: 1234
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "root"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   auth-service:
     build:
@@ -38,8 +42,10 @@ services:
     ports:
       - "8081:8081"
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   event-service:
     build:
@@ -48,8 +54,10 @@ services:
     ports:
       - "8082:8082"
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   userinteract-service:
     build:
@@ -58,15 +66,18 @@ services:
     ports:
       - "8083:8083"
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
 
   notification-service:
     build:
       context: ../..
       dockerfile: build/docker/notification.Dockerfile
     depends_on:
-      - kafka
+      kafka:
+        condition: service_started
 
 volumes:
   pgdata:

@@ -1,11 +1,19 @@
-# build/docker/userinteract.Dockerfile
+# --- Stage 1: Build dependencies and binary ---
 FROM golang:1.24 AS builder
 
 WORKDIR /app
 
+# Копируем только модули на этом этапе для кэширования
+COPY go.mod go.sum ./
+
+# Кэшируем go mod download
+RUN go mod download
+
+# Копируем остальной код
 COPY . .
 
-RUN go mod tidy && go build -o notification-service ./notification/cmd
+# Собираем бинарник
+RUN go build -o notification-service ./notification/cmd
 
 
 CMD ["./notification-service"]

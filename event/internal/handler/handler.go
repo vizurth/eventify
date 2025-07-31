@@ -1,11 +1,11 @@
 package handler
 
 import (
+	"eventify/event/internal/models"
+	"eventify/event/internal/service"
 	"github.com/gin-gonic/gin"
 	"net/http"
 	"strconv"
-	"eventify/event/internal/models"
-	"eventify/event/internal/service"
 )
 
 type EventHandler struct {
@@ -80,7 +80,7 @@ func (h *EventHandler) GetEventById(c *gin.Context) {
 
 // RegisterRoutes собираем все хендлеры в одну функцию
 func (h *EventHandler) RegisterRoutes() {
-	events := h.router.Group("/")
+	events := h.router.Group("/events")
 	events.POST("/", h.CreateEvent)
 	events.GET("/", h.GetEvents)
 	events.GET("/:id", h.GetEventById)
