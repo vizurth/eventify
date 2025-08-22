@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"eventify/common/kafka"
 	"eventify/common/logger"
 	"eventify/common/postgres"
 	eventpb "eventify/event/api"
@@ -11,14 +10,9 @@ import (
 	"eventify/event/internal/repository"
 	"eventify/event/internal/service"
 	"fmt"
-	"net"
-	"net/http"
-	"time"
-
-	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
+	"net"
 )
 
 func main() {
@@ -34,7 +28,7 @@ func main() {
 
 	// Kafka producer (topic: events)
 
-	eventService := service.NewEventService(eventRepo, cfg.Kafka)
+	eventService := service.NewEventService(ctx, eventRepo, cfg.Kafka)
 	grpcHandler := handler.NewEventHandler(eventService)
 
 	grpcServer := grpc.NewServer()

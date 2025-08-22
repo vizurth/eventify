@@ -8,10 +8,15 @@ event:
 user-interact:
   port: 9093
 
-
 postgres:
   host: "postgres"
   port: 5432
   username: "eventify-user"
   password: "eventify-password"
   database: "eventify"
+
+kafka:
+  host: kafka
+  port: 9094
+  brokers:
+    - "kafka:9094"

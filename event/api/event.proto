@@ -1,0 +1,85 @@
+syntax = "proto3";
+
+package event.v1;
+
+option go_package = "eventify/event/api;eventpb";
+
+import "google/api/annotations.proto";
+
+service EventService {
+  rpc CreateEvent (CreateEventRequest) returns (CreateEventResponse) {
+    option (google.api.http) = {
+      post: "/events"
+      body: "*"
+    };
+  }
+
+  rpc ListEvents (ListEventsRequest) returns (ListEventsResponse) {
+    option (google.api.http) = {
+      get: "/events"
+    };
+  }
+
+  rpc GetEvent (GetEventRequest) returns (Event) {
+    option (google.api.http) = {
+      get: "/events/{id}"
+    };
+  }
+}
+
+message CreateEventRequest {
+  string title = 1;
+  string description = 2;
+  string category = 3;
+  Location location = 4;
+  string start_time = 5; // RFC3339
+  string end_time = 6;   // RFC3339
+  Organizer organizer = 7;
+  repeated Participant participants = 8;
+  string status = 9;
+}
+
+message CreateEventResponse {
+  string message = 1;
+}
+
+message ListEventsRequest {}
+
+message ListEventsResponse {
+  repeated Event events = 1;
+}
+
+message GetEventRequest {
+  uint64 id = 1;
+}
+
+message Event {
+  uint64 id = 1;
+  string title = 2;
+  string description = 3;
+  string category = 4;
+  Location location = 5;
+  string start_time = 6; // RFC3339
+  string end_time = 7;   // RFC3339
+  Organizer organizer = 8;
+  repeated Participant participants = 9;
+  string status = 10;
+  string created_at = 11; // RFC3339
+}
+
+message Location {
+  string city = 1;
+  string venue = 2;
+  string address = 3;
+}
+
+message Organizer {
+  uint64 id = 1;
+  string username = 2;
+  string email = 3;
+}
+
+message Participant {
+  uint64 id = 1;
+  string username = 2;
+}
