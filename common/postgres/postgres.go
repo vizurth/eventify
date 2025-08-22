@@ -2,10 +2,8 @@ package postgres
 
 import (
 	"context"
-	"eventify/common/logger"
 	"fmt"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"strings"
 )
 
 type Config struct {
