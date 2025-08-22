@@ -2,11 +2,11 @@ package kafka
 
 import (
 	"context"
+	"eventify/common/logger"
 	"fmt"
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
 	"time"
-	"eventify/common/logger"
 )
 
 type Config struct {
