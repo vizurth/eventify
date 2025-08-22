@@ -7,9 +7,8 @@ import (
 )
 
 type AuthConfig struct {
-	Port          int    `yaml:"port" env:"PORT"`
-	MigrationPath string `yaml:"migration-path" env:"MIGRATION_PATH"`
-	SecretKey     string `yaml:"secret-key" env:"SECRET_KEY" env-default:"your-secret-key"`
+	Port      int    `yaml:"port" env:"PORT"`
+	SecretKey string `yaml:"secret-key" env:"SECRET_KEY" env-default:"your-secret-key"`
 }
 
 type Config struct {
