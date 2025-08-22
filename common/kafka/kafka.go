@@ -11,7 +11,7 @@ import (
 
 type Config struct {
 	Host    string   `yaml:"host" env:"HOST" env-default:"kafka"`
-	Port    uint16   `yaml:"port" env:"PORT" env-default:"9092"`
+	Port    uint16   `yaml:"port" env:"PORT" env-default:"9094"`
 	Brokers []string `yaml:"brokers" env:"BROKERS" env-separator:","`
 }
 
