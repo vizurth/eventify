@@ -1,0 +1,17 @@
+auth:
+  port: 9091
+  secret-key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
+
+event:
+  port: 9092
+
+user-interact:
+  port: 9093
+
+
+postgres:
+  host: "postgres"
+  port: 5432
+  username: "eventify-user"
+  password: "eventify-password"
+  database: "eventify"
