@@ -10,11 +10,20 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - postgres_volume:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql/data
   migrator:
     build:
       context: ../../
       dockerfile: build/docker/migrator.Dockerfile
     restart: on-failure
+    depends_on:
+      - postgres
+  auth:
+    build:
+      context: ../../
+      dockerfile: build/docker/auth.Dockerfile
+    restart: on-failure
+    ports:
+      - "9091:9091"
     depends_on:
       - postgres
