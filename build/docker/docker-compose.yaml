@@ -1,0 +1,20 @@
+
+volumes:
+  postgres_data:
+
+services:
+  postgres:
+    image: postgres:14
+    env_file:
+      - ../../configs/.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_volume:/var/lib/postgresql/data
+  migrator:
+    build:
+      context: ../../
+      dockerfile: build/docker/migrator.Dockerfile
+    restart: on-failure
+    depends_on:
+      - postgres
