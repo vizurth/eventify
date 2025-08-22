@@ -1,5 +1,5 @@
 #!/bin/bash
-source ../../configs.env
+source .env
 
 # если хочешь брать host из переменных окружения, можно так:
 export MIGRATION_DSN="host=postgres port=$POSTGRES_PORT dbname=$POSTGRES_DB user=$POSTGRES_USER password=$POSTGRES_PASSWORD sslmode=disable"
