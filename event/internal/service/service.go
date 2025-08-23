@@ -5,44 +5,46 @@ import (
 	"encoding/json"
 	mykafka "eventify/common/kafka"
 	"eventify/common/logger"
+	"eventify/common/retry"
 	"eventify/event/internal/models"
 	"eventify/event/internal/repository"
-
-	"github.com/segmentio/kafka-go"
+	"go.uber.org/zap"
+	"time"
+	//"github.com/segmentio/kafka-go"
 )
 
 type EventService struct {
 	repo          *repository.EventRepository
-	eventCreatedW *kafka.Writer
-	eventUpdatedW *kafka.Writer
-	eventDeletedW *kafka.Writer
+	eventCreatedW *mykafka.Writer
+	//eventUpdatedW *mykafka.Writer
+	//eventDeletedW *mykafka.Writer
 }
 
 // NewEventService инициализирует сервис, создаёт топики и продюсеров
 func NewEventService(ctx context.Context, repo *repository.EventRepository, cfg mykafka.Config) *EventService {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
-	if err := mykafka.CreateTopicWithRetry(cfg, "event-created", 1, 1); err != nil {
-		log.Error(ctx, "failed to create topic event-created")
-		return nil
-	}
-	if err := mykafka.CreateTopicWithRetry(cfg, "event-updated", 1, 1); err != nil {
-		log.Error(ctx, "failed to create topic event-updated")
-		return nil
-	}
-	if err := mykafka.CreateTopicWithRetry(cfg, "event-deleted", 1, 1); err != nil {
-		log.Error(ctx, "failed to create topic event-deleted")
-		return nil
+
+	// Создаем топики с повторными попытками
+	topics := []string{"event-created"}
+	for _, topic := range topics {
+		if err := mykafka.CreateTopicWithRetry(cfg, topic, 1, 1, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 2}); err != nil {
+			log.Error(ctx, "failed to create topic", zap.String("topic", topic), zap.Error(err))
+			return nil
+		}
+		log.Info(ctx, "successfully created topic", zap.String("topic", topic))
+
 	}
 
 	return &EventService{
 		repo:          repo,
 		eventCreatedW: mykafka.NewWriter(ctx, cfg, "event-created"),
-		eventUpdatedW: mykafka.NewWriter(ctx, cfg, "event-updated"),
-		eventDeletedW: mykafka.NewWriter(ctx, cfg, "event-deleted"),
+		//eventUpdatedW: mykafka.NewWriter(ctx, cfg, "event-updated"),
+		//eventDeletedW: mykafka.NewWriter(ctx, cfg, "event-deleted"),
 	}
 }
 
 func (s *EventService) CreateEvent(ctx context.Context, req models.EventReq) error {
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
 	if err := s.repo.CreateEvent(ctx, req); err != nil {
 		return err
 	}
@@ -58,11 +60,14 @@ func (s *EventService) CreateEvent(ctx context.Context, req models.EventReq) err
 		return err
 	}
 
+	err = s.eventCreatedW.SendWithRetry(ctx, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 3}, []byte("event.created"), value)
+	if err != nil {
+		log.Error(ctx, "failed to write message to kafka", zap.Error(err))
+		return err
+	}
+	log.Info(ctx, "successfully created event", zap.String("event_name", req.Title))
 	// отправляем сообщение в топик "event-created"
-	return s.eventCreatedW.WriteMessages(ctx, kafka.Message{
-		Key:   []byte("event.created"),
-		Value: value,
-	})
+	return nil
 }
 
 func (s *EventService) GetEvents(ctx context.Context, events *[]models.EventResp) error {
@@ -77,11 +82,6 @@ func (s *EventService) Close() error {
 	if err := s.eventCreatedW.Close(); err != nil {
 		return err
 	}
-	if err := s.eventUpdatedW.Close(); err != nil {
-		return err
-	}
-	if err := s.eventDeletedW.Close(); err != nil {
-		return err
-	}
+	c
 	return nil
 }
