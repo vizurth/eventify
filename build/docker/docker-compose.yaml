@@ -42,6 +42,17 @@ services:
     depends_on:
       - postgres
       - kafka
+  user-interact:
+    build:
+      context: ../../
+      dockerfile: build/docker/user-interact.Dockerfile
+    restart: on-failure
+    container_name: user-interact-service
+    ports:
+      - "9093:9093"
+    depends_on:
+      - postgres
+      - kafka
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
