@@ -82,6 +82,5 @@ func (s *EventService) Close() error {
 	if err := s.eventCreatedW.Close(); err != nil {
 		return err
 	}
-	c
 	return nil
 }

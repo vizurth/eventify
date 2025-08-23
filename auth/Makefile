@@ -1,5 +1,5 @@
 PROTO_DIR=../auth/api
-GOOGLEAPIS_DIR=../third-party/googleapis
+GOOGLEAPIS_DIR=../third_party/googleapis
 
 PROTOC=protoc
 

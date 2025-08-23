@@ -41,7 +41,7 @@ vendor/
 # Бинарники и артефакты сборки
 /dist/
 /artifacts/
-/third-party/
+/third_party/
 
 # Автогенерируемые файлы
 *.pb.go
