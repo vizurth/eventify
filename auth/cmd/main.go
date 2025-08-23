@@ -36,12 +36,12 @@ func main() {
 	// Start gRPC server on a dedicated port
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Auth.Port))
 	if err != nil {
-		logger.GetLoggerFromCtx(ctx).Fatal(ctx, "failed to listen for gRPC", zap.Error(err))
+		log.Fatal(ctx, "failed to listen for gRPC", zap.Error(err))
 	}
 
 	log.Info(ctx, fmt.Sprintf("gRPC server listening on port %d", cfg.Auth.Port))
-	if err := grpcServer.Serve(lis); err != nil {
-		logger.GetLoggerFromCtx(ctx).Fatal(ctx, "gRPC server failed", zap.Error(err))
+	if err = grpcServer.Serve(lis); err != nil {
+		log.Fatal(ctx, "gRPC server failed", zap.Error(err))
 	}
 
 }
