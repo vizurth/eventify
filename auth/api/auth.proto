@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "eventify/auth/api;authpb";
+
+import "google/api/annotations.proto";
+
+service AuthService {
+	rpc Register (RegisterRequest) returns (RegisterResponse) {
+		option (google.api.http) = {
+			post: "/auth/register"
+			body: "*"
+		};
+	}
+
+	rpc Login (LoginRequest) returns (LoginResponse) {
+		option (google.api.http) = {
+			post: "/auth/login"
+			body: "*"
+		};
+	}
+}
+
+message RegisterRequest {
+	string username = 1;
+	string email = 2;
+	string password = 3;
+	string role = 4;
+}
+
+message RegisterResponse {
+	string message = 1;
+}
+
+message LoginRequest {
+	string username = 1; // либо username
+	string email = 2;    // либо email
+	string password = 3;
+}
+
+message LoginResponse {
+	string token = 1;
+} 
