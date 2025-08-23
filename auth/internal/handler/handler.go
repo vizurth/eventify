@@ -1,58 +1,36 @@
 package handler
 
 import (
-	"github.com/gin-gonic/gin"
-	"net/http"
-	"eventify/auth/internal/models"
+	"context"
+	authpb "eventify/auth/api"
 	"eventify/auth/internal/service"
 )
 
-type AuthHandler struct {
+// AuthGRPCServer provides gRPC endpoints backed by AuthService.
+type AuthGRPCServer struct {
+	authpb.UnimplementedAuthServiceServer
 	service *service.AuthService
-	router  *gin.Engine
 }
 
-func NewAuthHandler(service *service.AuthService, router *gin.Engine) *AuthHandler {
-	return &AuthHandler{
-		service: service,
-		router:  router,
-	}
+func NewAuthGRPCServer(s *service.AuthService) *AuthGRPCServer {
+	return &AuthGRPCServer{service: s}
 }
-func (h *AuthHandler) RegisterHandler(c *gin.Context) {
-	ctx := c.Request.Context()
 
-	var req models.RegisterRequest
-
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+// Register handles user registration via gRPC.
+func (s *AuthGRPCServer) Register(ctx context.Context, req *authpb.RegisterRequest) (*authpb.RegisterResponse, error) {
+	modelReq := toRegisterModel(req)
+	if err := s.service.RegisterUser(ctx, modelReq); err != nil {
+		return nil, err
 	}
-	err := h.service.RegisterUser(ctx, req)
+	return &authpb.RegisterResponse{Message: "User registered"}, nil
+}
+
+// Login handles user login and returns a JWT token.
+func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
+	modelReq := toLoginModel(req)
+	token, err := s.service.LoginUser(ctx, modelReq)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return nil, err
 	}
-	c.JSON(http.StatusOK, gin.H{"message": "User registered"})
-}
-
-func (h *AuthHandler) LoginHandler(c *gin.Context) {
-	ctx := c.Request.Context()
-	var req models.LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	token, err := h.service.LoginUser(ctx, req)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	c.JSON(http.StatusOK, gin.H{"token": token})
-}
-
-func (h *AuthHandler) RegisterRoutes() {
-	auth := h.router.Group("/auth")
-	auth.POST("/register", h.RegisterHandler)
-	auth.POST("/login", h.LoginHandler)
-}
+	return &authpb.LoginResponse{Token: token}, nil
+} 

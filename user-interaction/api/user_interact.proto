@@ -1,0 +1,116 @@
+syntax = "proto3";
+
+package userinteract.v1;
+
+option go_package = "eventify/user-interaction/api;uipb";
+
+import "google/api/annotations.proto";
+
+service UserInteractionService {
+  // Reviews
+  rpc CreateReview (CreateReviewRequest) returns (CreateReviewResponse) {
+    option (google.api.http) = {
+      post: "/user-interact/"
+      body: "*"
+    };
+  }
+
+  rpc ListReviewsByEvent (ListReviewsByEventRequest) returns (ListReviewsByEventResponse) {
+    option (google.api.http) = {
+      get: "/user-interact/event/{event_id}"
+    };
+  }
+
+  rpc UpdateReview (UpdateReviewRequest) returns (UpdateReviewResponse) {
+    option (google.api.http) = {
+      put: "/user-interact/{review_id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteReview (DeleteReviewRequest) returns (DeleteReviewResponse) {
+    option (google.api.http) = {
+      delete: "/user-interact/{review_id}"
+    };
+  }
+
+  // Registrations
+  rpc RegisterForEvent (RegisterForEventRequest) returns (RegisterForEventResponse) {
+    option (google.api.http) = {
+      post: "/registration/event/{event_id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteRegistration (DeleteRegistrationRequest) returns (DeleteRegistrationResponse) {
+    option (google.api.http) = {
+      delete: "/registration/event/{event_id}"
+    };
+  }
+
+  rpc ListRegistrations (ListRegistrationsRequest) returns (ListRegistrationsResponse) {
+    option (google.api.http) = {
+      get: "/registration/event/{event_id}"
+    };
+  }
+}
+
+// Reviews
+message CreateReviewRequest {
+  uint64 event_id = 1;
+  uint64 user_id = 2;
+  string username = 3;
+  uint32 rating = 4;
+  string comment = 5;
+}
+
+message CreateReviewResponse { string message = 1; }
+
+message ListReviewsByEventRequest { uint64 event_id = 1; }
+message ListReviewsByEventResponse { repeated Review reviews = 1; }
+
+message UpdateReviewRequest {
+  uint64 review_id = 1; // path
+  uint32 rating = 2;
+  string comment = 3;
+  uint64 user_id = 4;
+  string username = 5;
+  uint64 event_id = 6;
+}
+message UpdateReviewResponse { string message = 1; }
+
+message DeleteReviewRequest { uint64 review_id = 1; }
+message DeleteReviewResponse { string message = 1; }
+
+message Review {
+  uint64 id = 1;
+  uint64 event_id = 2;
+  uint64 user_id = 3;
+  string username = 4;
+  uint32 rating = 5;
+  string comment = 6;
+  string created_at = 7; // RFC3339
+  string updated_at = 8; // RFC3339 or empty
+}
+
+// Registrations
+message RegisterForEventRequest {
+  uint64 event_id = 1; // path
+  uint64 user_id = 2;  // body
+  string username = 3; // body
+}
+message RegisterForEventResponse { string message = 1; }
+
+message DeleteRegistrationRequest {
+  uint64 event_id = 1; // path
+  uint64 user_id = 2;  // query or body not used by DELETE mapping; use query param
+}
+message DeleteRegistrationResponse { string message = 1; }
+
+message ListRegistrationsRequest { uint64 event_id = 1; }
+message ListRegistrationsResponse { repeated Participant participants = 1; }
+
+message Participant {
+  uint64 id = 1; // user_id
+  string username = 2;
+} 

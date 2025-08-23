@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	eventpb "eventify/event/api"
 	"eventify/common/kafka"
 	"eventify/common/logger"
 	"eventify/common/postgres"
@@ -10,10 +11,14 @@ import (
 	"eventify/event/internal/repository"
 	"eventify/event/internal/service"
 	"fmt"
-	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
+	"net"
 	"net/http"
 	"time"
+
+	gw "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -23,28 +28,56 @@ func main() {
 	ctx, _ = logger.New(ctx)
 
 	pool, _ := postgres.New(ctx, cfg.Postgres)
-
 	_ = postgres.WaitForPostgres(ctx, cfg.Postgres, 10, 1*time.Second)
 
-	err := postgres.Migrate(ctx, cfg.Postgres, cfg.Event.MigrationPath)
-	if err != nil {
+	if err := postgres.Migrate(ctx, cfg.Postgres, cfg.Event.MigrationPath); err != nil {
 		logger.GetLoggerFromCtx(ctx).Fatal(ctx, "migration failed", zap.Error(err))
 	}
 
-	router := gin.Default()
 	eventRepo := repository.NewEventRepository(pool)
 
-	producer := kafka.NewProducer([]string{"kafka:9092"}, "events")
-	defer producer.Close()
+	// Kafka producers for different topics
+	producers := map[string]*kafka.Producer{
+		"event-created": kafka.NewProducer([]string{"kafka:9092"}, "event-created"),
+		"event-updated": kafka.NewProducer([]string{"kafka:9092"}, "event-updated"),
+	}
+	
+	// Close all producers on exit
+	defer func() {
+		for _, producer := range producers {
+			if producer != nil {
+				producer.Close()
+			}
+		}
+	}()
 
-	eventService := service.NewEventService(eventRepo, producer)
-	eventHandler := handler.NewEventHandler(eventService, router)
+	eventService := service.NewEventService(eventRepo, producers)
+	rpcHandler := handler.NewEventHandler(eventService)
 
-	eventHandler.RegisterRoutes()
+	grpcServer := grpc.NewServer()
+	eventpb.RegisterEventServiceServer(grpcServer, rpcHandler)
 
+	grpcPort := 9092
+	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", grpcPort))
+	if err != nil {
+		logger.GetLoggerFromCtx(ctx).Fatal(ctx, "failed to listen for gRPC", zap.Error(err))
+	}
 	go func() {
-		if err := http.ListenAndServe(fmt.Sprintf(":%d", cfg.Event.Port), router); err != nil {
-			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "auth service failed to start", zap.Error(err))
+		if err := grpcServer.Serve(lis); err != nil {
+			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "gRPC server failed", zap.Error(err))
+		}
+	}()
+
+	mux := gw.NewServeMux()
+	connOpts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+	if err := eventpb.RegisterEventServiceHandlerFromEndpoint(ctx, mux, fmt.Sprintf("localhost:%d", grpcPort), connOpts); err != nil {
+		logger.GetLoggerFromCtx(ctx).Fatal(ctx, "failed to register grpc-gateway", zap.Error(err))
+	}
+
+	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", cfg.Event.Port), Handler: mux}
+	go func() {
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "http gateway failed", zap.Error(err))
 		}
 	}()
 

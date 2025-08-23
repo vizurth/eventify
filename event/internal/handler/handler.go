@@ -1,87 +1,41 @@
 package handler
 
 import (
+	"context"
+	eventpb "eventify/event/api"
 	"eventify/event/internal/models"
 	"eventify/event/internal/service"
-	"github.com/gin-gonic/gin"
-	"net/http"
-	"strconv"
 )
 
 type EventHandler struct {
+	eventpb.UnimplementedEventServiceServer
 	service *service.EventService
-	router  *gin.Engine
 }
 
-func NewEventHandler(service *service.EventService, router *gin.Engine) *EventHandler {
-	return &EventHandler{
-		service: service,
-		router:  gin.Default(),
-	}
+func NewEventHandler(s *service.EventService) *EventHandler {
+	return &EventHandler{service: s}
 }
 
-// CreateEvent создает event по запросу /event/
-func (h *EventHandler) CreateEvent(c *gin.Context) {
-	// прокидываем ctx для работы с базой данных
-	ctx := c.Request.Context()
-
-	// проверяем корректность JSON запроса
-	var req models.EventReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+func (h *EventHandler) CreateEvent(ctx context.Context, req *eventpb.CreateEventRequest) (*eventpb.CreateEventResponse, error) {
+	modelReq := toModelCreate(req)
+	if err := h.service.CreateEvent(ctx, modelReq); err != nil {
+		return nil, err
 	}
-
-	if err := h.service.CreateEvent(ctx, req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{"message": "event created"})
+	return &eventpb.CreateEventResponse{Message: "event created"}, nil
 }
 
-// GetEvents получаем все ивенты
-func (h *EventHandler) GetEvents(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	// получаем все event
+func (h *EventHandler) ListEvents(ctx context.Context, req *eventpb.ListEventsRequest) (*eventpb.ListEventsResponse, error) {
 	var events []models.EventResp
-
 	if err := h.service.GetEvents(ctx, &events); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
+		return nil, err
 	}
-
-	c.JSON(http.StatusOK, events)
+	return &eventpb.ListEventsResponse{Events: toProtoEvents(events)}, nil
 }
 
-// GetEventById получение ивента по id
-func (h *EventHandler) GetEventById(c *gin.Context) {
-	ctx := c.Request.Context()
-
-	// считываем eventID
-	eventId := c.Param("id")
-	eventID, err := strconv.Atoi(eventId)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid event ID"})
-		return
-	}
-	// запрашиваем event по ID
+func (h *EventHandler) GetEvent(ctx context.Context, req *eventpb.GetEventRequest) (*eventpb.Event, error) {
 	var e models.EventResp
-
-	if err = h.service.GetEventByID(ctx, eventID, &e); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	if err := h.service.GetEventByID(ctx, int(req.GetId()), &e); err != nil {
+		return nil, err
 	}
-
-	c.JSON(http.StatusOK, e)
-
-}
-
-// RegisterRoutes собираем все хендлеры в одну функцию
-func (h *EventHandler) RegisterRoutes() {
-	events := h.router.Group("/events")
-	events.POST("/", h.CreateEvent)
-	events.GET("/", h.GetEvents)
-	events.GET("/:id", h.GetEventById)
+	return toProtoEvent(e), nil
 }

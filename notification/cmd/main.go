@@ -2,8 +2,8 @@ package main
 
 import (
 	"context"
-	"eventify/common/kafka"
 	"eventify/notification/internal/handler"
+	"github.com/segmentio/kafka-go"
 	"log"
 	"os"
 	"os/signal"
