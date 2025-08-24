@@ -53,6 +53,17 @@ services:
     depends_on:
       - postgres
       - kafka
+  notification:
+    build:
+      context: ../../
+      dockerfile: build/docker/notification.Dockerfile
+    restart: on-failure
+    container_name: notification-service
+    ports:
+      - "9095:9095"
+    depends_on:
+      - postgres
+      - kafka
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
