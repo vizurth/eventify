@@ -6,18 +6,14 @@ import (
 )
 
 type Config struct {
-	Server   ServerConfig   `yaml:"server" env-prefix:"SERVER_"`
-	Services ServicesConfig `yaml:"services" env-prefix:"SERVICES_"`
+	Server       ServerConfig              `yaml:"server" env-prefix:"SERVER_"`
+	Auth         AuthServiceConfig         `yaml:"auth" env-prefix:"AUTH_"`
+	Event        EventServiceConfig        `yaml:"event" env-prefix:"EVENT_"`
+	UserInteract UserInteractServiceConfig `yaml:"user-interact" env-prefix:"USER_INTERACT_"`
 }
 
 type ServerConfig struct {
 	Port int `yaml:"port" env:"PORT" env-default:"8080"`
-}
-
-type ServicesConfig struct {
-	Auth         AuthServiceConfig         `yaml:"auth" env-prefix:"AUTH_"`
-	Event        EventServiceConfig        `yaml:"event" env-prefix:"EVENT_"`
-	UserInteract UserInteractServiceConfig `yaml:"user-interact" env-prefix:"USER_INTERACT_"`
 }
 
 type AuthServiceConfig struct {

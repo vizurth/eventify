@@ -1,14 +1,18 @@
 auth:
+  host: "auth-service"
   port: 9091
   secret-key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
 
 event:
+  host: "event-service"
   port: 9092
 
 user-interact:
+  host: "user-interact-service"
   port: 9093
 
 notification:
+  host: "notification-service"
   port: 9095
 
 postgres:
@@ -26,16 +30,3 @@ kafka:
 
 server:
   port: 9097
-
-services:
-  auth:
-    host: "auth-service"
-    port: 9091
-
-  event:
-    host: "event-service"
-    port: 9092
-
-  user-interact:
-    host: "user-interact-service"
-    port: 9093

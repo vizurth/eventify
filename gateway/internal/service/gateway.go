@@ -38,7 +38,7 @@ func (g *GatewayService) Start() error {
 
 	// Создаем gRPC соединения к сервисам
 	authConn, err := grpc.Dial(
-		fmt.Sprintf("%s:%d", g.config.Services.Auth.Host, g.config.Services.Auth.Port),
+		fmt.Sprintf("%s:%d", g.config.Auth.Host, g.config.Auth.Port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -47,7 +47,7 @@ func (g *GatewayService) Start() error {
 	defer authConn.Close()
 
 	eventConn, err := grpc.Dial(
-		fmt.Sprintf("%s:%d", g.config.Services.Event.Host, g.config.Services.Event.Port),
+		fmt.Sprintf("%s:%d", g.config.Event.Host, g.config.Event.Port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -56,7 +56,7 @@ func (g *GatewayService) Start() error {
 	defer eventConn.Close()
 
 	userInteractConn, err := grpc.Dial(
-		fmt.Sprintf("%s:%d", g.config.Services.UserInteract.Host, g.config.Services.UserInteract.Port),
+		fmt.Sprintf("%s:%d", g.config.UserInteract.Host, g.config.UserInteract.Port),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
