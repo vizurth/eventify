@@ -8,6 +8,9 @@ event:
 user-interact:
   port: 9093
 
+notification:
+  port: 9095
+
 postgres:
   host: "postgres"
   port: 5432
