@@ -1,15 +1,27 @@
+gateway:
+  port: 9090
+  shutdown_timeout: 30s
+
 auth:
   port: 9091
-  secret-key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
+  secret_key: "VxCDGAeugvEa6jvBiFYcOboddRGKydns"
+  url: "http://localhost:9091"
+#  url: "http://auth-service:9091"
 
 event:
   port: 9092
+  url: "http://localhost:9092"
+#  url: "http://event-service:9092"
 
 user-interact:
   port: 9093
+  url: "http://localhost:9093"
+#  url: "http://user-interact-service:9093"
 
 notification:
-  port: 9095
+  port: 9094
+  url: "http://localhost:9094"
+#  url: "http://notification-service:9094"
 
 postgres:
   host: "postgres"
@@ -20,6 +32,6 @@ postgres:
 
 kafka:
   host: kafka
-  port: 9094
+  port: 9095
   brokers:
-    - "kafka:9094"
+    - "kafka:9095"
