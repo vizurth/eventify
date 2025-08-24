@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>WebSocket Client — index.html</title>
+  <style>
+    :root {
+      --bg: #0f172a; /* slate-900 */
+      --panel: #111827; /* gray-900 */
+      --muted: #94a3b8; /* slate-400 */
+      --ok: #22c55e;   /* green-500 */
+      --warn: #eab308; /* yellow-500 */
+      --bad: #ef4444;  /* red-500 */
+      --brand: #60a5fa; /* blue-400 */
+      --text: #e5e7eb; /* gray-200 */
+      --border: #1f2937; /* gray-800 */
+      --accent: #7dd3fc; /* sky-300 */
+      --code: #eab7ff;
+      font-synthesis-weight: none;
+      font-synthesis-style: none;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: linear-gradient(180deg, #0b1023, var(--bg));
+      color: var(--text); font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
+    }
+    .wrap { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+    header { display:flex; align-items:center; gap:12px; margin-bottom: 16px; }
+    h1 { font-size: clamp(18px, 2.2vw + 10px, 28px); margin: 0; letter-spacing: 0.2px; }
+    .badge { padding: 2px 8px; border-radius: 999px; background: #1f2937; color: var(--muted); border: 1px solid var(--border); font-size: 12px; }
+
+    .card { background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01)); border: 1px solid var(--border); border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); }
+    .row { display:grid; gap: 12px; grid-template-columns: 1fr; }
+    @media (min-width: 880px) { .row { grid-template-columns: 1.1fr 0.9fr; } }
+
+    .panel { padding: 16px; }
+    .controls { display:grid; gap: 10px; grid-template-columns: 1fr; }
+    .controls .line { display:flex; gap: 8px; align-items:center; }
+    label { font-size: 12px; color: var(--muted); }
+    input[type="text"], textarea { width: 100%; background: #0b122a; color: var(--text); border: 1px solid var(--border); border-radius: 10px; padding: 10px 12px; outline: none; }
+    textarea { resize: vertical; min-height: 100px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; }
+    .btns { display:flex; gap: 8px; flex-wrap: wrap; }
+    button { background: #141b33; color: var(--text); border: 1px solid var(--border); padding: 10px 12px; border-radius: 10px; cursor: pointer; transition: transform .05s ease; }
+    button:hover { filter: brightness(1.08); }
+    button:active { transform: translateY(1px); }
+    .primary { background: #12203a; border-color: #1e3a8a; }
+    .danger { background: #2a1420; border-color: #7f1d1d; }
+    .ghost { background: transparent; border-color: var(--border); }
+
+    .status { display:flex; align-items:center; gap: 8px; font-size: 14px; }
+    .dot { width: 10px; height: 10px; border-radius: 999px; background: var(--bad); box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15); }
+    .dot.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.15); }
+    .dot.warn { background: var(--warn); box-shadow: 0 0 0 3px rgba(234, 179, 8, 0.15); }
+
+    .log { height: 380px; overflow-y: auto; padding: 8px; background: #0a0f22; border-top: 1px solid var(--border); border-bottom-left-radius: 16px; border-bottom-right-radius: 16px; }
+    .log pre { margin: 0; white-space: pre-wrap; word-break: break-word; }
+    .log .item { padding: 8px 10px; border-bottom: 1px dashed rgba(148,163,184,0.15); }
+    .log .ts { color: var(--muted); font-size: 11px; }
+    .log .dir { font-size: 11px; letter-spacing: .2px; padding: 2px 6px; border-radius: 999px; border: 1px solid var(--border); }
+    .log .in { color: #a7f3d0; }
+    .log .out { color: #bfdbfe; }
+    .log .sys { color: #fca5a5; }
+    .log .payload { margin-top: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; font-size: 13px; color: var(--code); }
+
+    .footer { display:flex; justify-content: space-between; align-items:center; padding: 10px 16px; font-size: 12px; color: var(--muted); }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>WebSocket клиент</h1>
+      <span class="badge">index.html — без зависимостей</span>
+    </header>
+
+    <div class="card">
+      <div class="panel">
+        <div class="controls">
+          <div class="line">
+            <label for="url" style="min-width: 140px">WebSocket URL</label>
+            <input id="url" type="text" placeholder="ws://localhost:8080" value="ws://localhost:8080" />
+            <button id="connect" class="primary">Подключиться</button>
+            <button id="disconnect" class="danger">Отключиться</button>
+          </div>
+          <div class="line" style="gap:16px; flex-wrap:wrap;">
+            <span class="status"><span id="dot" class="dot"></span><span id="state">Отключено</span></span>
+            <label><input id="auto" type="checkbox" checked /> авто-переподключение</label>
+            <label><input id="json" type="checkbox" /> отправлять как JSON</label>
+            <label><input id="ts" type="checkbox" checked /> добавлять метку времени</label>
+          </div>
+        </div>
+      </div>
+      <div class="panel">
+        <label for="message">Сообщение</label>
+        <textarea id="message" placeholder='Пример: {"type":"ping"}'></textarea>
+        <div class="btns" style="margin-top:8px">
+          <button id="send" class="primary">Отправить</button>
+          <button id="clear" class="ghost">Очистить лог</button>
+          <button id="ping" class="ghost">Ping</button>
+          <button id="close" class="ghost">Close (1000)</button>
+        </div>
+      </div>
+      <div class="log" id="log" aria-live="polite"></div>
+      <div class="footer">
+        <div>Поддерживаются ws:// и wss://. Этот файл можно открыть прямо из файловой системы.</div>
+        <div>⌘/Ctrl+Enter — отправить</div>
+      </div>
+    </div>
+
+    <p style="color:var(--muted); margin-top:16px; font-size:13px">
+      Подсказка: если ваш сервер ожидает бинарные данные, измените отправку на <code>ws.send(Uint8Array.from([...]))</code>.
+    </p>
+  </div>
+
+  <script>
+    /**
+     * Простой WebSocket клиент.
+     * Особенности:
+     *  - переподключение с экспоненциальной задержкой
+     *  - переключатель JSON-режима
+     *  - ping и ручное закрытие
+     *  - аккуратный лог входящих/исходящих сообщений
+     */
+    let ws = null;
+    let reconnectAttempt = 0;
+    let reconnectTimer = null;
+
+    const $ = (sel) => document.querySelector(sel);
+    const urlEl = $('#url');
+    const connectBtn = $('#connect');
+    const disconnectBtn = $('#disconnect');
+    const sendBtn = $('#send');
+    const clearBtn = $('#clear');
+    const pingBtn = $('#ping');
+    const closeBtn = $('#close');
+    const msgEl = $('#message');
+    const logEl = $('#log');
+    const dotEl = $('#dot');
+    const stateEl = $('#state');
+    const autoEl = $('#auto');
+    const jsonEl = $('#json');
+    const tsEl = $('#ts');
+
+    function setState(state, tone = 'bad') {
+      stateEl.textContent = state;
+      dotEl.className = 'dot ' + (tone || '');
+    }
+
+    function ts() {
+      return new Date().toLocaleTimeString();
+    }
+
+    function log(dir, payload, kind = 'msg') {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'item';
+      const top = document.createElement('div');
+      const dirSpan = document.createElement('span');
+      dirSpan.className = 'dir ' + (dir === '⇦ in' ? 'in' : dir === '⇨ out' ? 'out' : 'sys');
+      dirSpan.textContent = dir;
+
+      const tsSpan = document.createElement('span');
+      tsSpan.className = 'ts';
+      tsSpan.textContent = tsEl.checked ? (' • ' + ts()) : '';
+
+      top.appendChild(dirSpan);
+      top.appendChild(tsSpan);
+
+      const pre = document.createElement('pre');
+      pre.className = 'payload';
+      try {
+        if (typeof payload === 'string') {
+          pre.textContent = payload;
+        } else if (payload instanceof Blob) {
+          pre.textContent = `[Blob ${payload.type || 'binary'} ${payload.size}b]`;
+        } else {
+          pre.textContent = JSON.stringify(payload, null, 2);
+        }
+      } catch (e) {
+        pre.textContent = String(payload);
+      }
+
+      wrapper.appendChild(top);
+      wrapper.appendChild(pre);
+      logEl.appendChild(wrapper);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    function connect() {
+      const url = urlEl.value.trim();
+      if (!url) return alert('Укажите ws:// или wss:// URL');
+      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        return log('sys', 'Уже подключено или выполняется подключение');
+      }
+
+      try {
+        ws = new WebSocket(url);
+      } catch (e) {
+        log('sys', 'Неверный URL: ' + e.message);
+        return;
+      }
+
+      setState('Подключение…', 'warn');
+      log('sys', 'Открываю соединение ' + url);
+
+      ws.onopen = () => {
+        setState('Открыто', 'ok');
+        reconnectAttempt = 0;
+        if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+        log('sys', 'Соединение установлено');
+      };
+
+      ws.onmessage = (ev) => {
+        const data = ev.data;
+        if (typeof data === 'string') {
+          // Пытаемся красиво отформатировать JSON
+          try {
+            const maybe = JSON.parse(data);
+            log('⇦ in', maybe);
+          } catch {
+            log('⇦ in', data);
+          }
+        } else if (data instanceof Blob) {
+          log('⇦ in', data);
+        } else {
+          log('⇦ in', '[unknown message type]');
+        }
+      };
+
+      ws.onerror = (ev) => {
+        setState('Ошибка', 'warn');
+        log('sys', 'Ошибка сокета (см. консоль)');
+        console.error('WebSocket error', ev);
+      };
+
+      ws.onclose = (ev) => {
+        const code = ev.code;
+        const reason = ev.reason || '(без причины)';
+        setState('Закрыто (' + code + ')', 'bad');
+        log('sys', `Соединение закрыто: code=${code}, reason=${reason}`);
+        if (autoEl.checked) scheduleReconnect();
+      };
+    }
+
+    function scheduleReconnect() {
+      if (ws && ws.readyState === WebSocket.OPEN) return;
+      const base = 600; // ms
+      const max = 8000; // ms
+      const delay = Math.min(max, Math.floor(base * Math.pow(2, reconnectAttempt++)) + Math.random() * 300);
+      setState(`Переподключение через ~${Math.round(delay)} мс`, 'warn');
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      reconnectTimer = setTimeout(() => { connect(); }, delay);
+    }
+
+    function disconnect() {
+      if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+      if (ws) {
+        try { ws.close(1000, 'client closing'); } catch {}
+      }
+    }
+
+    function sendCurrent() {
+      if (!ws || ws.readyState !== WebSocket.OPEN) {
+        return log('sys', 'Нельзя отправить: нет открытого соединения');
+      }
+      const raw = msgEl.value;
+      if (jsonEl.checked) {
+        try {
+          const obj = raw ? JSON.parse(raw) : {};
+          ws.send(JSON.stringify(obj));
+          log('⇨ out', obj);
+        } catch (e) {
+          log('sys', 'Некорректный JSON: ' + e.message);
+        }
+      } else {
+        ws.send(raw);
+        log('⇨ out', raw);
+      }
+    }
+
+    // UI handlers
+    connectBtn.addEventListener('click', connect);
+    disconnectBtn.addEventListener('click', disconnect);
+    sendBtn.addEventListener('click', sendCurrent);
+    clearBtn.addEventListener('click', () => { logEl.innerHTML = ''; });
+    pingBtn.addEventListener('click', () => {
+      msgEl.value = '{"type":"ping","t":' + Date.now() + '}';
+      jsonEl.checked = true;
+      sendCurrent();
+    });
+    closeBtn.addEventListener('click', () => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.close(1000, 'Normal Closure by client');
+      }
+    });
+
+    msgEl.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        sendCurrent();
+      }
+    });
+
+    // Автоподключение при загрузке, если URL содержит ?url=ws://...
+    (function bootFromQuery(){
+      const params = new URLSearchParams(location.search);
+      const u = params.get('url');
+      if (u) { urlEl.value = u; connect(); }
+    })();
+  </script>
+</body>
+</html>
