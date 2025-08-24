@@ -78,6 +78,10 @@ func (s *EventService) GetEventByID(ctx context.Context, eventID int, e *models.
 	return s.repo.GetEventByID(ctx, eventID, e)
 }
 
+func (s *EventService) CheckUserRegistration(ctx context.Context, eventID, userID int, e *models.EventResp) error {
+	return s.repo.CheckUserRegistration(ctx, eventID, userID, e)
+}
+
 func (s *EventService) Close() error {
 	if err := s.eventCreatedW.Close(); err != nil {
 		return err

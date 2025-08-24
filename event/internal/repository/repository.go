@@ -188,3 +188,21 @@ func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *mode
 
 	return nil
 }
+
+func (r *EventRepository) CheckUserRegistration(ctx context.Context, eventID, userID int, e *models.EventResp) error {
+	query, args, err := r.psql.
+		Select("EXISTS(SELECT 1 FROM event_participants WHERE event_id = ? AND user_id = ?)").
+		Where(sq.Eq{"event_id": eventID, "user_id": userID}).
+		ToSql()
+	if err != nil {
+		return err
+	}
+
+	var exists bool
+	if err = r.db.QueryRow(ctx, query, args...).Scan(&exists); err != nil {
+		return err
+	}
+
+	e.IsRegistered = exists
+	return nil
+}

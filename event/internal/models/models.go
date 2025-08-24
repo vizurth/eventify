@@ -49,4 +49,5 @@ type EventResp struct {
 	Participants []Participant `json:"participants"`
 	Status       string        `json:"status"`
 	CreatedAt    time.Time     `json:"created_at"`
+	IsRegistered bool          `json:"is_registered"`
 }

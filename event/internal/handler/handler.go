@@ -5,6 +5,7 @@ import (
 	eventpb "eventify/event/api"
 	"eventify/event/internal/models"
 	"eventify/event/internal/service"
+	"strconv"
 )
 
 type EventHandler struct {
@@ -36,6 +37,15 @@ func (h *EventHandler) GetEvent(ctx context.Context, req *eventpb.GetEventReques
 	var e models.EventResp
 	if err := h.service.GetEventByID(ctx, int(req.GetId()), &e); err != nil {
 		return nil, err
+	}
+	if req.UserId != "" {
+		userId, err := strconv.Atoi(req.UserId)
+		if err != nil {
+			return nil, err
+		}
+		if err = h.service.CheckUserRegistration(ctx, int(req.GetId()), userId, &e); err != nil {
+			return nil, err
+		}
 	}
 	return toProtoEvent(e), nil
 }
