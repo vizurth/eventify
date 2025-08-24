@@ -55,22 +55,27 @@ func (c *Reader) FetchWithRetry(ctx context.Context, strat retry.Strategy) (kafk
 	var msg kafka.Message
 	err := retry.Do(func() error {
 		m, e := c.Fetch(ctx)
-		if e == nil {
-			msg = m
+		if e != nil {
+			logger.GetOrCreateLoggerFromCtx(ctx).Error(ctx, "fetch failed", zap.Error(e))
+			return e
 		}
-		return e
+		msg = m
+		return nil
 	}, strat)
 	return msg, err
 }
 
 func (c *Reader) StartConsuming(ctx context.Context, out chan<- kafka.Message, strat retry.Strategy) {
+	l := logger.GetOrCreateLoggerFromCtx(ctx)
 	go func() {
+		l.Info(ctx, "starting kafka consumer goroutine")
 		defer close(out)
 		for {
 			msg, err := c.FetchWithRetry(ctx, strat)
 			if err != nil {
 				// Можно добавить логирование ошибки
-				break
+				l.Error(ctx, "kafka consume error", zap.Error(err))
+				continue
 			}
 			select {
 			case out <- msg:
