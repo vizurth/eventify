@@ -23,3 +23,19 @@ kafka:
   port: 9094
   brokers:
     - "kafka:9094"
+
+server:
+  port: 9097
+
+services:
+  auth:
+    host: "auth-service"
+    port: 9091
+
+  event:
+    host: "event-service"
+    port: 9092
+
+  user-interact:
+    host: "user-interact-service"
+    port: 9093
