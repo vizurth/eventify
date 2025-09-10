@@ -38,6 +38,21 @@ local-migration-up:
 local-migration-down:
 	$(LOCAL_BIN)/goose -dir ${LOCAL_MIGRATION_DIR} postgres ${LOCAL_MIGRATION_DSN} down -v
 
+vendor-proto:
+		@if [ ! -d third_party/google ]; then \
+			git clone https://github.com/googleapis/googleapis third_party/googleapis &&\
+			mkdir -p  third_party/google/ &&\
+			mv third_party/googleapis/google/api third_party/google &&\
+			rm -rf third_party/googleapis ;\
+		fi
+		@if [ ! -d third_party/protoc-gen-openapiv2 ]; then \
+			mkdir -p third_party/protoc-gen-openapiv2/options &&\
+			git clone https://github.com/grpc-ecosystem/grpc-gateway third_party/openapiv2 &&\
+			mv third_party/openapiv2/protoc-gen-openapiv2/options/*.proto third_party/protoc-gen-openapiv2/options &&\
+			rm -rf third_party/openapiv2 ;\
+		fi
+
+
 #go mod edit -replace eventify/common=../common
 #go get eventify/common
 

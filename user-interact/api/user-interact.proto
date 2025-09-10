@@ -5,6 +5,20 @@ package userinteract.v1;
 option go_package = "eventify/user-interaction/api;uipb";
 
 import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "User-Interact Service API"
+    version: "1.0"
+    description: "User Interaction service for users"
+  };
+  host: "localhost:9097";
+  schemes: HTTP;
+  consumes: "application/json";
+  produces: "application/json";
+};
+
 
 service UserInteractionService {
   // Reviews

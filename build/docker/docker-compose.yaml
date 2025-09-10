@@ -78,6 +78,28 @@ services:
       - auth
       - event
       - user-interact
+
+#  swagger-ui:
+#    build:
+#      context: ../../
+#      dockerfile: build/docker/swagger.Dockerfile
+#    container_name: swagger-ui
+#    ports:
+#      - "9098:8080"   # Swagger UI будет доступен на localhost:9098
+#    depends_on:
+#      - gateway
+
+  swagger-ui:
+    image: swaggerapi/swagger-ui:latest
+    container_name: swagger-ui
+    ports:
+      - "9098:8080"
+    environment:
+      SWAGGER_JSON: ""
+      URLS: '[{"name":"Auth","url":"/swagger/auth.swagger.json"},{"name":"Event","url":"/swagger/event.swagger.json"},{"name":"UserInteract","url":"/swagger/user-interact.swagger.json"}]'
+    volumes:
+      - ../../swagger/docs:/usr/share/nginx/html/swagger:ro
+
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
     ports:
@@ -87,7 +109,6 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9094
     depends_on:
       - kafka
-
 
   zookeeper:
     image: zookeeper

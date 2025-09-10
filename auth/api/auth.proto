@@ -5,6 +5,19 @@ package auth.v1;
 option go_package = "eventify/auth/api;authpb";
 
 import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Auth Service API"
+    version: "1.0"
+    description: "Authentication service for users"
+  };
+	host: "localhost:9097";
+  schemes: HTTP;
+  consumes: "application/json";
+  produces: "application/json";
+};
 
 service AuthService {
 	rpc Register (RegisterRequest) returns (RegisterResponse) {
