@@ -11,7 +11,7 @@ import (
 )
 
 type AuthService struct {
-	repo   *repository.AuthRepository
+	repo   repository.Repository
 	secret string
 }
 
@@ -20,7 +20,7 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-func NewAuthService(repo *repository.AuthRepository, secret string) *AuthService {
+func NewAuthService(repo repository.Repository, secret string) *AuthService {
 	return &AuthService{
 		repo:   repo,
 		secret: secret,
