@@ -43,5 +43,5 @@ func main() {
 	if err = grpcServer.Serve(lis); err != nil {
 		log.Fatal(ctx, "gRPC server failed", zap.Error(err))
 	}
-
+	_ = make(map[int]int, 0)
 }

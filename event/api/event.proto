@@ -5,6 +5,19 @@ package event.v1;
 option go_package = "eventify/event/api;eventpb";
 
 import "google/api/annotations.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
+  info: {
+    title: "Event Service API"
+    version: "1.0"
+    description: "Event service for users"
+  };
+  host: "localhost:9097";
+  schemes: HTTP;
+  consumes: "application/json";
+  produces: "application/json";
+};
 
 service EventService {
   rpc CreateEvent (CreateEventRequest) returns (CreateEventResponse) {

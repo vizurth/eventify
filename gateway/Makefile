@@ -4,6 +4,21 @@
 BINARY_NAME=gateway
 BUILD_DIR=build
 MAIN_PATH=cmd/main.go
+GOPATH= $(shell go env GOPATH)
+
+
+PROTOC_GEN_OPENAPIV2=$(GOPATH)/bin/protoc-gen-openapiv2
+
+install-deps:
+	GOBIN=$(GOPATH)/bin go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-openapiv2@v2.20.0
+
+
+gen-openapi:
+	protoc -I . \
+		-I $(GOPATH)/pkg/mod \
+		--openapiv2_out ./docs \
+		--openapiv2_opt logtostderr=true \
+		auth/api/*.proto event/api/*.proto user-interact/api/*.proto
 
 # Сборка
 build:

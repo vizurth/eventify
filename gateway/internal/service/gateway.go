@@ -6,6 +6,7 @@ import (
 	"eventify/gateway/internal/middleware"
 	"fmt"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -83,17 +84,16 @@ func (g *GatewayService) Start() error {
 	// Создаем HTTP сервер
 	mux := http.NewServeMux()
 
-	// Добавляем middleware для проверки JWT токенов
-
-	// Регистрируем маршруты с middleware
-	mux.Handle("/", middleware.AuthMiddleware(gwmux, g.logger))
-
-	// Добавляем health check endpoint
-	mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status":"ok","service":"gateway"}`))
+	// Оборачиваем gRPC-Gateway через CORS middleware
+	c := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:9098"}, // порт Swagger UI
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Content-Type", "Authorization"},
+		AllowCredentials: true,
 	})
+
+	// Регистрируем маршруты с CORS и JWT middleware
+	mux.Handle("/", c.Handler(middleware.AuthMiddleware(gwmux, g.logger)))
 
 	// Запускаем сервер
 	addr := fmt.Sprintf(":%d", g.config.Server.Port)
