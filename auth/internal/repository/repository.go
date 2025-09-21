@@ -2,7 +2,7 @@ package repository
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
@@ -41,7 +41,7 @@ func (r *AuthRepository) UserExists(ctx context.Context, username, email string)
 	err = r.db.QueryRow(ctx, query, args...).Scan(&count)
 
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("user exists repository error: %w", err)
 	}
 
 	return count > 0, nil
@@ -52,7 +52,7 @@ func (r *AuthRepository) CreateUser(ctx context.Context, username, email, hash, 
 	_, err = r.db.Exec(ctx, query, args...)
 
 	if err != nil {
-		return errors.New("could not create user")
+		return fmt.Errorf("create user repository error: %w", err)
 	}
 	return nil
 }
@@ -66,7 +66,7 @@ func (r *AuthRepository) GetUser(ctx context.Context, username string, hashedPas
 	// Сканируем результат в переданные указатели
 	err = row.Scan(userId, hashedPassword, role)
 	if err != nil {
-		return errors.New("could not get user")
+		return fmt.Errorf("get user repository error: %w", err)
 	}
 
 	return nil

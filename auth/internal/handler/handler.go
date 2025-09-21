@@ -5,6 +5,7 @@ import (
 	authpb "eventify/auth/api"
 	"eventify/auth/internal/service"
 	"eventify/common/logger"
+	"fmt"
 	"go.uber.org/zap"
 )
 
@@ -26,7 +27,7 @@ func (s *AuthGRPCServer) Register(ctx context.Context, req *authpb.RegisterReque
 
 	if err := s.service.RegisterUser(ctx, modelReq); err != nil {
 		log.Error(ctx, "register user failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("register user failed: %w", err)
 	}
 	return &authpb.RegisterResponse{Message: "User registered"}, nil
 }
@@ -40,7 +41,7 @@ func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*
 	token, err := s.service.LoginUser(ctx, modelReq)
 	if err != nil {
 		log.Error(ctx, "login user failed", zap.Error(err))
-		return nil, err
+		return nil, fmt.Errorf("login user failed: %w", err)
 	}
 	return &authpb.LoginResponse{Token: token}, nil
 }
