@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"errors"
+	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"time"
 )
@@ -38,7 +39,7 @@ func ParseToken(tokenString string, secret []byte) (*CustomClaims, error) {
 		return secret, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse token: %w", err)
 	}
 	if claims, ok := token.Claims.(*CustomClaims); ok && token.Valid {
 		return claims, nil
