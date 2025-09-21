@@ -27,6 +27,7 @@ get-deps:
 	go get -u google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	go get -u github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway
 
+.PHONY: cover
 gen:
 	$(LOCAL_BIN)/mockgen -source=internal/repository/repository.go \
 	-destination=internal/repository/mocks/mock_repository.go

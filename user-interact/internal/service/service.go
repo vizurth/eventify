@@ -8,6 +8,7 @@ import (
 	"eventify/common/retry"
 	"eventify/user-interact/internal/models"
 	"eventify/user-interact/internal/repository"
+	"fmt"
 	"go.uber.org/zap"
 	"strconv"
 	"time"
@@ -52,7 +53,7 @@ func NewUserInteractionService(ctx context.Context, repo *repository.UserInterac
 func (s *UserInteractionService) CreateNewReviews(ctx context.Context, req models.ReviewReq) error {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 	if err := s.repo.CreateNewReviews(ctx, req); err != nil {
-		return err
+		return fmt.Errorf("create reviews service: %w", err)
 	}
 
 	eventPayload := map[string]string{
@@ -64,13 +65,13 @@ func (s *UserInteractionService) CreateNewReviews(ctx context.Context, req model
 
 	value, err := json.Marshal(eventPayload)
 	if err != nil {
-		return err
+		return fmt.Errorf("create review service: %w", err)
 	}
 	err = s.reviewCreatedW.SendWithRetry(ctx, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 3}, []byte("review.created"), value)
 
 	if err != nil {
 		log.Error(ctx, "failed to send review.created", zap.Error(err))
-		return err
+		return fmt.Errorf("send review.created service: %w", err)
 	}
 	log.Info(ctx, "successfully review.created")
 
@@ -86,7 +87,7 @@ func (s *UserInteractionService) UpdateReview(ctx context.Context, reviewID int,
 
 	// обновляем в БД
 	if err := s.repo.UpdateReview(ctx, reviewID, req); err != nil {
-		return err
+		return fmt.Errorf("update review service: %w", err)
 	}
 
 	eventPayload := map[string]string{
@@ -99,12 +100,12 @@ func (s *UserInteractionService) UpdateReview(ctx context.Context, reviewID int,
 
 	value, err := json.Marshal(eventPayload)
 	if err != nil {
-		return err
+		return fmt.Errorf("update review service: %w", err)
 	}
 
 	if err := s.reviewUpdatedW.SendWithRetry(ctx, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 3}, []byte("review.updated"), value); err != nil {
 		log.Error(ctx, "failed to send review.updated", zap.Error(err))
-		return err
+		return fmt.Errorf("send review.updated service: %w", err)
 	}
 
 	log.Info(ctx, "successfully review.updated", zap.String("review_id", strconv.Itoa(reviewID)))
@@ -115,7 +116,7 @@ func (s *UserInteractionService) DeleteReview(ctx context.Context, reviewID int)
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := s.repo.DeleteReview(ctx, reviewID); err != nil {
-		return err
+		return fmt.Errorf("delete review service: %w", err)
 	}
 
 	eventPayload := map[string]string{
@@ -129,7 +130,7 @@ func (s *UserInteractionService) DeleteReview(ctx context.Context, reviewID int)
 
 	if err := s.reviewDeletedW.SendWithRetry(ctx, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 3}, []byte("review.deleted"), value); err != nil {
 		log.Error(ctx, "failed to send review.deleted", zap.Error(err))
-		return err
+		return fmt.Errorf("send review.deleted service: %w", err)
 	}
 
 	log.Info(ctx, "successfully review.deleted", zap.String("review_id", strconv.Itoa(reviewID)))
@@ -156,7 +157,7 @@ func (s *UserInteractionService) RegistrationOnEvent(ctx context.Context, eventI
 
 	if err := s.registrationCreatedW.SendWithRetry(ctx, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 3}, []byte("registration.created"), value); err != nil {
 		log.Error(ctx, "failed to send registration.created", zap.Error(err))
-		return err
+		return fmt.Errorf("send registration.created service: %w", err)
 	}
 
 	log.Info(ctx, "successfully registration.created", zap.String("event_id", strconv.Itoa(eventID)), zap.String("user_id", strconv.Itoa(userID)))
@@ -167,7 +168,7 @@ func (s *UserInteractionService) DeleteRegistration(ctx context.Context, eventID
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := s.repo.DeleteRegistration(ctx, eventID, userID); err != nil {
-		return err
+		return fmt.Errorf("delete registration service: %w", err)
 	}
 
 	eventPayload := map[string]string{
@@ -177,12 +178,12 @@ func (s *UserInteractionService) DeleteRegistration(ctx context.Context, eventID
 
 	value, err := json.Marshal(eventPayload)
 	if err != nil {
-		return err
+		return fmt.Errorf("delete registration service: %w", err)
 	}
 
 	if err := s.registrationDeleteW.SendWithRetry(ctx, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 3}, []byte("registration.deleted"), value); err != nil {
 		log.Error(ctx, "failed to send registration.deleted", zap.Error(err))
-		return err
+		return fmt.Errorf("send registration.deleted service: %w", err)
 	}
 
 	log.Info(ctx, "successfully registration.deleted", zap.String("event_id", strconv.Itoa(eventID)), zap.String("user_id", strconv.Itoa(userID)))

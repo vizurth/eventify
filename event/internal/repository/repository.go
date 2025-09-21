@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"eventify/event/internal/models"
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -35,20 +36,20 @@ func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) 
 		ToSql()
 
 	if err != nil {
-		return err
+		return fmt.Errorf("create event: %w", err)
 	}
 
 	_, err = r.db.Exec(ctx, query, args...)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("create event: %w", err)
 	}
 	var lastEventID uint
 	query, args, err = r.psql.Select("id").From("events").OrderBy("id DESC LIMIT 1").ToSql()
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(&lastEventID)
 	if err != nil {
-		return err
+		return fmt.Errorf("create event: %w", err)
 	}
 
 	// цикл для добавления участников в базу данных
@@ -58,12 +59,12 @@ func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) 
 			Values(lastEventID, participant.ID, participant.Username).ToSql()
 
 		if err != nil {
-			return err
+			return fmt.Errorf("create event: create event_participants: %w", err)
 		}
 		_, err = r.db.Exec(ctx, query, args...)
 
 		if err != nil {
-			return err
+			return fmt.Errorf("create event: create event_participants: %w", err)
 		}
 	}
 
@@ -82,12 +83,12 @@ func (r *EventRepository) GetEvents(ctx context.Context, events *[]models.EventR
 		From("events").
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("get events: %w", err)
 	}
 
 	rows, err := r.db.Query(ctx, query, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("get events: %w", err)
 	}
 	defer rows.Close()
 
@@ -100,7 +101,7 @@ func (r *EventRepository) GetEvents(ctx context.Context, events *[]models.EventR
 			&e.Organizer.ID, &e.Organizer.Username, &e.Organizer.Email,
 			&e.Status, &e.CreatedAt,
 		); err != nil {
-			return err
+			return fmt.Errorf("get events: %w", err)
 		}
 
 		// Получаем участников через squirrel
@@ -110,19 +111,19 @@ func (r *EventRepository) GetEvents(ctx context.Context, events *[]models.EventR
 			Where(sq.Eq{"event_id": e.ID}).
 			ToSql()
 		if err != nil {
-			return err
+			return fmt.Errorf("get events: %w", err)
 		}
 
 		pRows, err := r.db.Query(ctx, pQuery, pArgs...)
 		if err != nil {
-			return err
+			return fmt.Errorf("get events: %w", err)
 		}
 		var participants []models.Participant
 		for pRows.Next() {
 			var p models.Participant
 			if err := pRows.Scan(&p.ID, &p.Username); err != nil {
 				pRows.Close()
-				return err
+				return fmt.Errorf("get events: %w", err)
 			}
 			participants = append(participants, p)
 		}
@@ -148,7 +149,7 @@ func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *mode
 		Where(sq.Eq{"id": eventID}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("get event by id: %w", err)
 	}
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(
@@ -159,7 +160,7 @@ func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *mode
 		&e.Status, &e.CreatedAt,
 	)
 	if err != nil {
-		return err
+		return fmt.Errorf("get event by id: %w", err)
 	}
 
 	// Участники через squirrel
@@ -169,19 +170,19 @@ func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *mode
 		Where(sq.Eq{"event_id": e.ID}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("get event by id: %w", err)
 	}
 
 	rows, err := r.db.Query(ctx, pQuery, pArgs...)
 	if err != nil {
-		return err
+		return fmt.Errorf("get event by id: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var p models.Participant
 		if err := rows.Scan(&p.ID, &p.Username); err != nil {
-			return err
+			return fmt.Errorf("get event by id: %w", err)
 		}
 		e.Participants = append(e.Participants, p)
 	}
@@ -195,12 +196,12 @@ func (r *EventRepository) CheckUserRegistration(ctx context.Context, eventID, us
 		Where(sq.Eq{"event_id": eventID, "user_id": userID}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("check user registration: %w", err)
 	}
 
 	var exists bool
 	if err = r.db.QueryRow(ctx, query, args...).Scan(&exists); err != nil {
-		return err
+		return fmt.Errorf("check user registration: %w", err)
 	}
 
 	e.IsRegistered = exists

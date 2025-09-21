@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"eventify/user-interact/internal/models"
+	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"time"
@@ -26,11 +27,14 @@ func (r *UserInteractionRepository) CreateNewReviews(ctx context.Context, req mo
 		Values(req.EventID, req.UserID, req.Username, req.Rating, req.Comment, nil).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("create new reviews repo: %w", err)
 	}
 
 	_, err = r.db.Exec(ctx, sql, args...)
-	return err
+	if err != nil {
+		return fmt.Errorf("create new reviews repo: %w", err)
+	}
+	return nil
 }
 
 func (r *UserInteractionRepository) GetCurrentReviewsByEventID(ctx context.Context, eventId int, reviews *[]models.ReviewResp) error {
@@ -39,12 +43,12 @@ func (r *UserInteractionRepository) GetCurrentReviewsByEventID(ctx context.Conte
 		Where(sq.Eq{"event_id": eventId}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("get current reviews repo: %w", err)
 	}
 
 	rows, err := r.db.Query(ctx, sql, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("get current reviews repo: %w", err)
 	}
 	defer rows.Close()
 
@@ -60,7 +64,7 @@ func (r *UserInteractionRepository) GetCurrentReviewsByEventID(ctx context.Conte
 			&temp.CreatedAt,
 			&temp.UpdatedAt,
 		); err != nil {
-			return err
+			return fmt.Errorf("get current reviews repo: %w", err)
 		}
 		*reviews = append(*reviews, temp)
 	}
@@ -75,11 +79,14 @@ func (r *UserInteractionRepository) UpdateReview(ctx context.Context, reviewID i
 		Where(sq.Eq{"id": reviewID, "username": req.Username, "user_id": req.UserID}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("update reviews repo: %w", err)
 	}
 
 	_, err = r.db.Exec(ctx, sql, args...)
-	return err
+	if err != nil {
+		return fmt.Errorf("update reviews repo: %w", err)
+	}
+	return nil
 }
 
 func (r *UserInteractionRepository) DeleteReview(ctx context.Context, reviewID int) error {
@@ -87,11 +94,15 @@ func (r *UserInteractionRepository) DeleteReview(ctx context.Context, reviewID i
 		Where(sq.Eq{"id": reviewID}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("delete reviews repo: %w", err)
 	}
 
 	_, err = r.db.Exec(ctx, sql, args...)
-	return err
+	if err != nil {
+		return fmt.Errorf("delete reviews repo: %w", err)
+	}
+
+	return nil
 }
 
 func (r *UserInteractionRepository) RegistrationOnEvent(ctx context.Context, eventID, userID int, username string) error {
@@ -100,11 +111,14 @@ func (r *UserInteractionRepository) RegistrationOnEvent(ctx context.Context, eve
 		Values(eventID, userID, username).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("registration on event repo: %w", err)
 	}
 
 	_, err = r.db.Exec(ctx, sql, args...)
-	return err
+	if err != nil {
+		return fmt.Errorf("registration on event repo: %w", err)
+	}
+	return nil
 }
 
 func (r *UserInteractionRepository) DeleteRegistration(ctx context.Context, eventID, userID int) error {
@@ -112,11 +126,14 @@ func (r *UserInteractionRepository) DeleteRegistration(ctx context.Context, even
 		Where(sq.Eq{"event_id": eventID, "user_id": userID}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("delete registration repo: %w", err)
 	}
 
 	_, err = r.db.Exec(ctx, sql, args...)
-	return err
+	if err != nil {
+		fmt.Errorf("delete registration repo: %w", err)
+	}
+	return nil
 }
 
 func (r *UserInteractionRepository) GetRegistrations(ctx context.Context, eventID int, registrations *[]models.ParticipantResp) error {
@@ -125,19 +142,19 @@ func (r *UserInteractionRepository) GetRegistrations(ctx context.Context, eventI
 		Where(sq.Eq{"event_id": eventID}).
 		ToSql()
 	if err != nil {
-		return err
+		return fmt.Errorf("get registrations repo: %w", err)
 	}
 
 	rows, err := r.db.Query(ctx, sql, args...)
 	if err != nil {
-		return err
+		return fmt.Errorf("get registrations repo: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
 		var temp models.ParticipantResp
 		if err := rows.Scan(&temp.ID, &temp.Username, &temp.EventID); err != nil {
-			return err
+			return fmt.Errorf("get registrations repo: %w", err) repo
 		}
 		*registrations = append(*registrations, temp)
 	}

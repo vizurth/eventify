@@ -8,6 +8,7 @@ import (
 	"eventify/common/retry"
 	"eventify/event/internal/models"
 	"eventify/event/internal/repository"
+	"fmt"
 	"go.uber.org/zap"
 	"time"
 	//"github.com/segmentio/kafka-go"
@@ -57,13 +58,13 @@ func (s *EventService) CreateEvent(ctx context.Context, req models.EventReq) err
 	}
 	value, err := json.Marshal(eventPayload)
 	if err != nil {
-		return err
+		return fmt.Errorf("create event: %w", err)
 	}
 
 	err = s.eventCreatedW.SendWithRetry(ctx, retry.Strategy{Attempts: 3, Delay: time.Second, Backoff: 3}, []byte("event.created"), value)
 	if err != nil {
 		log.Error(ctx, "failed to write message to kafka", zap.Error(err))
-		return err
+		return fmt.Errorf("create event: write message to kafka: %w", err)
 	}
 	log.Info(ctx, "successfully created event", zap.String("event_name", req.Title))
 	// отправляем сообщение в топик "event-created"
@@ -84,7 +85,7 @@ func (s *EventService) CheckUserRegistration(ctx context.Context, eventID, userI
 
 func (s *EventService) Close() error {
 	if err := s.eventCreatedW.Close(); err != nil {
-		return err
+		return fmt.Errorf("close event: %w", err)
 	}
 	return nil
 }
