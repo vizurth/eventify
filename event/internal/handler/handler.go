@@ -7,7 +7,6 @@ import (
 	"eventify/event/internal/models"
 	"eventify/event/internal/service"
 	"fmt"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/zap"
 	"strconv"
 )

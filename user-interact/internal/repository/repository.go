@@ -154,7 +154,7 @@ func (r *UserInteractionRepository) GetRegistrations(ctx context.Context, eventI
 	for rows.Next() {
 		var temp models.ParticipantResp
 		if err := rows.Scan(&temp.ID, &temp.Username, &temp.EventID); err != nil {
-			return fmt.Errorf("get registrations repo: %w", err) repo
+			return fmt.Errorf("get registrations repo: %w", err)
 		}
 		*registrations = append(*registrations, temp)
 	}
