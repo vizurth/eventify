@@ -32,16 +32,48 @@ func (s *AuthGRPCServer) Register(ctx context.Context, req *authpb.RegisterReque
 	return &authpb.RegisterResponse{Message: "User registered"}, nil
 }
 
-// Login handles user login and returns a JWT token.
+// Login handles user login and returns a access and refresh token.
 func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
 	modelReq := toLoginModel(req)
 
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
-	token, err := s.service.LoginUser(ctx, modelReq)
+	access, refresh, err := s.service.LoginUser(ctx, modelReq)
 	if err != nil {
 		log.Error(ctx, "login user failed", zap.Error(err))
 		return nil, fmt.Errorf("login user failed: %w", err)
 	}
-	return &authpb.LoginResponse{Token: token}, nil
+	return &authpb.LoginResponse{
+		AccessToken:  access,
+		RefreshToken: refresh,
+	}, nil
+}
+
+// Logout handler user logout and return success message
+func (s *AuthGRPCServer) Logout(ctx context.Context, req *authpb.RefreshRequest) (*authpb.LogoutResponse, error) {
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	if err := s.service.Logout(ctx, req.RefreshToken); err != nil {
+		log.Error(ctx, "logout failed", zap.Error(err))
+		return nil, fmt.Errorf("logout user failed: %w", err)
+	}
+
+	return &authpb.LogoutResponse{
+		Message: "User logout",
+	}, nil
+}
+
+// Refresh handler refresh access token
+func (s *AuthGRPCServer) Refresh(ctx context.Context, req *authpb.RefreshRequest) (*authpb.LoginResponse, error) {
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	accessToken, err := s.service.RefreshToken(ctx, req.RefreshToken)
+	if err != nil {
+		log.Error(ctx, "refresh token failed", zap.Error(err))
+		return nil, fmt.Errorf("refresh token failed: %w", err)
+	}
+
+	return &authpb.LoginResponse{
+		AccessToken: accessToken,
+	}, nil
 }

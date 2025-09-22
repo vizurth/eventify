@@ -7,6 +7,7 @@ import (
 	"eventify/auth/internal/repository"
 	"eventify/common/jwt"
 	"fmt"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"time"
 )
@@ -20,7 +21,11 @@ type AuthService struct {
 
 func HashPassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	return string(bytes), fmt.Errorf("hash error: %w", err)
+	if err != nil {
+		return "", fmt.Errorf("failed to hash password: %w", err)
+	}
+
+	return string(bytes), nil
 }
 
 func NewAuthService(repo repository.Repository, secret string) *AuthService {
@@ -30,6 +35,7 @@ func NewAuthService(repo repository.Repository, secret string) *AuthService {
 	}
 }
 
+// RegisterUser service register new user
 func (s *AuthService) RegisterUser(ctx context.Context, req models.RegisterRequest) error {
 	exitst, err := s.repo.UserExists(ctx, req.Username, req.Email)
 	if err != nil {
@@ -46,22 +52,54 @@ func (s *AuthService) RegisterUser(ctx context.Context, req models.RegisterReque
 	return s.repo.CreateUser(ctx, req.Username, req.Email, hash, req.Role)
 }
 
-func (s *AuthService) LoginUser(ctx context.Context, req models.LoginRequest) (string, error) {
+// LoginUser service login user in system and get tokens from repo
+func (s *AuthService) LoginUser(ctx context.Context, req models.LoginRequest) (string, string, error) {
 	var hashedPassword, role string
 	var userId int
 
 	if err := s.repo.GetUser(ctx, req.Username, &hashedPassword, &userId, &role); err != nil {
-		return "", fmt.Errorf("login user: %w", err)
+		return "", "", fmt.Errorf("login user: %w", err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(req.Password)); err != nil {
-		return "", fmt.Errorf("login user: %w", err)
+		return "", "", fmt.Errorf("login user: %w", err)
 	}
 
-	token, err := jwt.GenerateToken(s.secret, userId, req.Username, req.Email, role, time.Hour*24)
+	accessToken, err := jwt.GenerateToken(s.secret, userId, req.Username, req.Email, role, time.Hour*24)
 	if err != nil {
-		return "", fmt.Errorf("login user: generate token: %w", err)
+		return "", "", fmt.Errorf("login user: generate token: %w", err)
 	}
-	return token, nil
 
+	refreshToken := uuid.New().String()
+	expiresAt := time.Now().Add(time.Hour * 24 * 7)
+
+	if err := s.repo.SaveRefreshToken(ctx, userId, refreshToken, expiresAt); err != nil {
+		return "", "", fmt.Errorf("login user: save refresh token: %w", err)
+	}
+
+	return accessToken, refreshToken, nil
+}
+
+// Logout service logout from system delete refresh-token
+func (s *AuthService) Logout(ctx context.Context, refreshToken string) error {
+	return s.repo.DeleteRefreshToken(ctx, refreshToken)
+}
+
+// RefreshToken service refresh access token if time is expired
+func (s *AuthService) RefreshToken(ctx context.Context, refreshToken string) (string, error) {
+	userId, expiresAt, err := s.repo.GetRefreshTokenInfo(ctx, refreshToken)
+	if err != nil {
+		return "", fmt.Errorf("refresh token info: %w", err)
+	}
+	if time.Now().After(expiresAt) {
+		_ = s.repo.DeleteRefreshToken(ctx, refreshToken)
+		return "", errors.New("refresh token expired")
+	}
+
+	var username, email, role string
+	if err = s.repo.GetUserForGenerateNewToken(ctx, userId, &username, &email, &role); err != nil {
+		return "", fmt.Errorf("refresh token info: %w", err)
+	}
+
+	return jwt.GenerateToken(s.secret, userId, username, email, role, 15*time.Minute)
 }

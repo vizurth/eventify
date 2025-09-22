@@ -6,6 +6,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"time"
 )
 
 type DB interface {
@@ -18,6 +19,10 @@ type Repository interface {
 	UserExists(ctx context.Context, username, email string) (bool, error)
 	CreateUser(ctx context.Context, username, email, hash, role string) error
 	GetUser(ctx context.Context, username string, hashedPassword *string, userId *int, role *string) error
+	SaveRefreshToken(ctx context.Context, id int, token string, at time.Time) error
+	GetRefreshTokenInfo(ctx context.Context, token string) (int, time.Time, error)
+	DeleteRefreshToken(ctx context.Context, token string) error
+	GetUserForGenerateNewToken(ctx context.Context, userId int, username, email, role *string) error
 }
 
 type AuthRepository struct {
@@ -32,6 +37,7 @@ func NewAuthRepository(db DB) Repository {
 	}
 }
 
+// UserExists checking if user exists in users table
 func (r *AuthRepository) UserExists(ctx context.Context, username, email string) (bool, error) {
 	var count int
 
@@ -47,6 +53,7 @@ func (r *AuthRepository) UserExists(ctx context.Context, username, email string)
 	return count > 0, nil
 }
 
+// CreateUser create in user in users table
 func (r *AuthRepository) CreateUser(ctx context.Context, username, email, hash, role string) error {
 	query, args, err := r.psql.Insert("users").Columns("username", "email", "password_hash", "role").Values(username, email, hash, role).ToSql()
 	_, err = r.db.Exec(ctx, query, args...)
@@ -57,6 +64,7 @@ func (r *AuthRepository) CreateUser(ctx context.Context, username, email, hash, 
 	return nil
 }
 
+// GetUser get user from table
 func (r *AuthRepository) GetUser(ctx context.Context, username string, hashedPassword *string, userId *int, role *string) error {
 	query, args, err := r.psql.Select("id", "password_hash", "role").From("users").Where(sq.Eq{"username": username}).ToSql()
 
@@ -69,5 +77,70 @@ func (r *AuthRepository) GetUser(ctx context.Context, username string, hashedPas
 		return fmt.Errorf("get user repository error: %w", err)
 	}
 
+	return nil
+}
+
+// GetUserForGenerateNewToken get user for generate token after expires
+func (r *AuthRepository) GetUserForGenerateNewToken(ctx context.Context, userId int, username, email, role *string) error {
+	query, args, err := r.psql.Select("username", "email", "role").
+		From("users").
+		Where(sq.Eq{"id": userId}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("get user repository error: %w", err)
+	}
+	err = r.db.QueryRow(ctx, query, args...).Scan(&username, email, role)
+	if err != nil {
+		return fmt.Errorf("get user repository error: %w", err)
+	}
+
+	return nil
+}
+
+// SaveRefreshToken save refresh token in table
+func (r *AuthRepository) SaveRefreshToken(ctx context.Context, userId int, refreshToken string, expiresAt time.Time) error {
+	query, args, err := r.psql.Insert("refresh_tokens").
+		Columns("user_id", "token", "expires_at").
+		Values(userId, refreshToken, expiresAt).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("save refresh token repository error: %w", err)
+	}
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("save refresh token repository error: %w", err)
+	}
+	return nil
+}
+
+// GetRefreshTokenInfo get token from table
+func (r *AuthRepository) GetRefreshTokenInfo(ctx context.Context, token string) (int, time.Time, error) {
+	var userId int
+	var expiresAt time.Time
+	query, args, err := r.psql.Select("user_id", "expires_at").
+		From("refresh_tokens").
+		Where(sq.Eq{"token": token}).ToSql()
+
+	if err != nil {
+		return 0, time.Time{}, fmt.Errorf("get refresh token repository error: %w", err)
+	}
+
+	err = r.db.QueryRow(ctx, query, args...).Scan(&userId, &expiresAt)
+	if err != nil {
+		return 0, time.Time{}, fmt.Errorf("get refresh token repository error: %w", err)
+	}
+	return userId, expiresAt, nil
+}
+
+// DeleteRefreshToken delete token from table
+func (r *AuthRepository) DeleteRefreshToken(ctx context.Context, token string) error {
+	query, args, err := r.psql.Delete("refresh_tokens").Where(sq.Eq{"token": token}).ToSql()
+	if err != nil {
+		return fmt.Errorf("delete refresh token repository error: %w", err)
+	}
+	_, err = r.db.Exec(ctx, query, args...)
+	if err != nil {
+		return fmt.Errorf("delete refresh token repository error: %w", err)
+	}
 	return nil
 }
