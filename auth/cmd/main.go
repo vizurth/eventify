@@ -9,6 +9,7 @@ import (
 	"eventify/auth/internal/service"
 	"eventify/common/logger"
 	"eventify/common/postgres"
+	"eventify/common/redis"
 	"fmt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
@@ -24,8 +25,9 @@ func main() {
 	log := logger.GetLoggerFromCtx(ctx)
 
 	pool, _ := postgres.New(ctx, cfg.Postgres)
+	redisClient, _ := redis.NewClient(ctx, cfg.Redis)
 
-	authRepo := repository.NewAuthRepository(pool)
+	authRepo := repository.NewAuthRepository(pool, redisClient)
 	authService := service.NewAuthService(authRepo, cfg.Auth.SecretKey)
 	grpcServer := grpc.NewServer()
 	grpcHandler := handler.NewAuthGRPCServer(authService)

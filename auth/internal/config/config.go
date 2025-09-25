@@ -2,6 +2,7 @@ package config
 
 import (
 	"eventify/common/postgres"
+	"eventify/common/redis"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -13,6 +14,7 @@ type AuthConfig struct {
 
 type Config struct {
 	Postgres postgres.Config `yaml:"postgres" env-prefix:"POSTGRES_"`
+	Redis    redis.Config    `yaml:"redis" env-prefix:"REDIS_"`
 	Auth     AuthConfig      `yaml:"auth" env-previx:"AUTH_"`
 }
 
