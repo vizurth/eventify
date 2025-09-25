@@ -32,7 +32,7 @@ func (s *AuthGRPCServer) Register(ctx context.Context, req *authpb.RegisterReque
 	return &authpb.RegisterResponse{Message: "User registered"}, nil
 }
 
-// Login handles user login and returns a access and refresh token.
+// Login handles user login and returns access and refresh token.
 func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*authpb.LoginResponse, error) {
 	modelReq := toLoginModel(req)
 

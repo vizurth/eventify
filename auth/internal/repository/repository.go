@@ -2,10 +2,13 @@ package repository
 
 import (
 	"context"
+	"eventify/common/logger"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/redis/go-redis/v9"
+	"strconv"
 	"time"
 )
 
@@ -26,14 +29,16 @@ type Repository interface {
 }
 
 type AuthRepository struct {
-	db   DB
-	psql sq.StatementBuilderType
+	db    DB
+	psql  sq.StatementBuilderType
+	redis *redis.Client
 }
 
-func NewAuthRepository(db DB) Repository {
+func NewAuthRepository(db DB, redis *redis.Client) Repository {
 	return &AuthRepository{
-		db:   db,
-		psql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
+		db:    db,
+		psql:  sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
+		redis: redis,
 	}
 }
 
@@ -99,6 +104,7 @@ func (r *AuthRepository) GetUserForGenerateNewToken(ctx context.Context, userId 
 
 // SaveRefreshToken save refresh token in table
 func (r *AuthRepository) SaveRefreshToken(ctx context.Context, userId int, refreshToken string, expiresAt time.Time) error {
+	// Postgres
 	query, args, err := r.psql.Insert("refresh_tokens").
 		Columns("user_id", "token", "expires_at").
 		Values(userId, refreshToken, expiresAt).
@@ -110,11 +116,34 @@ func (r *AuthRepository) SaveRefreshToken(ctx context.Context, userId int, refre
 	if err != nil {
 		return fmt.Errorf("save refresh token repository error: %w", err)
 	}
+
+	// Redis
+	ttl := time.Until(expiresAt)
+	err = r.redis.Set(ctx, fmt.Sprintf("refresh:%s", refreshToken), userId, ttl).Err()
+
+	if err != nil {
+		return fmt.Errorf("save refresh token repository error to redis: %w", err)
+	}
+	logger.GetOrCreateLoggerFromCtx(ctx).Info(ctx, "save refresh token to redis success")
 	return nil
 }
 
 // GetRefreshTokenInfo get token from table
 func (r *AuthRepository) GetRefreshTokenInfo(ctx context.Context, token string) (int, time.Time, error) {
+	// Redis
+	userIdStr, err := r.redis.Get(ctx, fmt.Sprintf("refresh:%s", token)).Result()
+	if err == nil {
+		userId, err := strconv.Atoi(userIdStr)
+		if err != nil {
+			return 0, time.Time{}, fmt.Errorf("invalid user id from redis: %w", err)
+		}
+		ttl, err := r.redis.TTL(ctx, fmt.Sprintf("refresh:%s", token)).Result()
+		expiresAt := time.Now().Add(ttl)
+		logger.GetOrCreateLoggerFromCtx(ctx).Info(ctx, "successfully get refresh token info from redis")
+		return userId, expiresAt, nil
+	}
+
+	// Postgres
 	var userId int
 	var expiresAt time.Time
 	query, args, err := r.psql.Select("user_id", "expires_at").
@@ -134,6 +163,7 @@ func (r *AuthRepository) GetRefreshTokenInfo(ctx context.Context, token string) 
 
 // DeleteRefreshToken delete token from table
 func (r *AuthRepository) DeleteRefreshToken(ctx context.Context, token string) error {
+	// Postgres
 	query, args, err := r.psql.Delete("refresh_tokens").Where(sq.Eq{"token": token}).ToSql()
 	if err != nil {
 		return fmt.Errorf("delete refresh token repository error: %w", err)
@@ -142,5 +172,12 @@ func (r *AuthRepository) DeleteRefreshToken(ctx context.Context, token string) e
 	if err != nil {
 		return fmt.Errorf("delete refresh token repository error: %w", err)
 	}
+
+	// Redis
+	err = r.redis.Del(ctx, fmt.Sprintf("refresh:%s", token)).Err()
+	if err != nil {
+		return fmt.Errorf("delete refresh token repository error: %w", err)
+	}
+
 	return nil
 }
