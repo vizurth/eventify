@@ -3,6 +3,7 @@ package config
 import (
 	"eventify/common/kafka"
 	"eventify/common/postgres"
+	"eventify/common/redis"
 	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
 )
@@ -14,6 +15,7 @@ type EventConfig struct {
 
 type Config struct {
 	Postgres postgres.Config `yaml:"postgres" env-prefix:"POSTGRES_"`
+	Redis    redis.Config    `yaml:"redis" env-prefix:"REDIS_"`
 	Event    EventConfig     `yaml:"event" env-previx:"EVENT_"`
 	Kafka    kafka.Config    `yaml:"kafka" env-prefix:"KAFKA"`
 }
