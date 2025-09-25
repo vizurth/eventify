@@ -4,6 +4,7 @@ import (
 	"context"
 	"eventify/common/logger"
 	"eventify/common/postgres"
+	"eventify/common/redis"
 	eventpb "eventify/event/api"
 	"eventify/event/internal/config"
 	"eventify/event/internal/handler"
@@ -21,10 +22,11 @@ func main() {
 	ctx := context.Background()
 	ctx, _, _ = logger.New(ctx)
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
-
+	пше
 	pool, _ := postgres.New(ctx, cfg.Postgres)
+	redisClient, _ := redis.NewClient(ctx, cfg.Redis)
 
-	eventRepo := repository.NewEventRepository(pool)
+	eventRepo := repository.NewEventRepository(pool, redisClient)
 
 	// Kafka producer (topic: events)
 

@@ -2,19 +2,26 @@ package repository
 
 import (
 	"context"
+	"encoding/json"
+	"eventify/common/logger"
 	"eventify/event/internal/models"
 	"fmt"
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/redis/go-redis/v9"
+	"go.uber.org/zap"
+	"strconv"
+	"time"
 )
 
 type EventRepository struct {
-	db   *pgxpool.Pool
-	psql sq.StatementBuilderType
+	db    *pgxpool.Pool
+	psql  sq.StatementBuilderType
+	redis *redis.Client
 }
 
-func NewEventRepository(db *pgxpool.Pool) *EventRepository {
-	return &EventRepository{db: db, psql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar)}
+func NewEventRepository(db *pgxpool.Pool, redis *redis.Client) *EventRepository {
+	return &EventRepository{db: db, psql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar), redis: redis}
 }
 
 func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) error {
@@ -72,7 +79,19 @@ func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) 
 }
 
 func (r *EventRepository) GetEvents(ctx context.Context, events *[]models.EventResp) error {
-	// Собираем запрос через squirrel
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
+	// Redis
+	cacheKey := "events:list"
+
+	cached, err := r.redis.Get(ctx, cacheKey).Result()
+	if err == nil {
+		if err := json.Unmarshal([]byte(cached), events); err == nil {
+			log.Info(ctx, "list found from redis")
+			return nil
+		}
+	}
+
+	// Postgres
 	query, args, err := r.psql.
 		Select(
 			"id", "title", "description", "category",
@@ -133,10 +152,23 @@ func (r *EventRepository) GetEvents(ctx context.Context, events *[]models.EventR
 		*events = append(*events, e)
 	}
 
+	data, _ := json.Marshal(*events)
+	_ = r.redis.Set(ctx, cacheKey, data, 30*time.Second)
+	log.Info(ctx, "list event set to redis")
+
 	return nil
 }
 
 func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *models.EventResp) error {
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
+	cachedEvent, err := r.redis.Get(ctx, "event:"+strconv.Itoa(eventID)).Result()
+	if err == nil {
+		if err := json.Unmarshal([]byte(cachedEvent), e); err == nil {
+			log.Info(ctx, "Event found from redis", zap.Int("id", eventID))
+			return nil
+		}
+	}
+
 	// Событие по ID через squirrel
 	query, args, err := r.psql.
 		Select(
@@ -186,6 +218,10 @@ func (r *EventRepository) GetEventByID(ctx context.Context, eventID int, e *mode
 		}
 		e.Participants = append(e.Participants, p)
 	}
+
+	data, _ := json.Marshal(*e)
+	_ = r.redis.Set(ctx, "event:"+strconv.Itoa(eventID), data, 15*time.Minute)
+	log.Info(ctx, "Event set to redis", zap.Int("id", eventID))
 
 	return nil
 }
