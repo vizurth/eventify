@@ -1,9 +1,9 @@
-
 volumes:
   postgres_data:
   zookeeper_data:
   zookeeper_datalog:
   kafka_500:
+  redis-data:
 
 services:
   postgres:
@@ -79,16 +79,6 @@ services:
       - event
       - user-interact
 
-#  swagger-ui:
-#    build:
-#      context: ../../
-#      dockerfile: build/docker/swagger.Dockerfile
-#    container_name: swagger-ui
-#    ports:
-#      - "9098:8080"   # Swagger UI будет доступен на localhost:9098
-#    depends_on:
-#      - gateway
-
   swagger-ui:
     image: swaggerapi/swagger-ui:latest
     container_name: swagger-ui
@@ -134,3 +124,12 @@ services:
     - zookeeper
     volumes:
       - kafka_500:/kafka/logs
+  redis:
+    image: redis:latest
+    container_name: my_redis_container
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - redis-network
