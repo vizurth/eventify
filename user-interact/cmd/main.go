@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"eventify/common/grpc/interceptors"
 	"eventify/common/logger"
 	"eventify/common/postgres"
 	uipb "eventify/user-interact/api"
@@ -15,6 +16,7 @@ import (
 	"net"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -29,7 +31,11 @@ func main() {
 
 	uiRepo := repository.NewUserInteractionRepository(pool)
 	uiService := service.NewUserInteractionService(ctx, uiRepo, cfg.Kafka)
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			interceptors.TimeoutInterceptor(4 * time.Second),
+		),
+	)
 	grpcHandler := handler.NewUserInteractionHandler(uiService)
 
 	uipb.RegisterUserInteractionServiceServer(grpcServer, grpcHandler)

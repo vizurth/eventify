@@ -7,6 +7,7 @@ import (
 	"eventify/auth/internal/handler"
 	"eventify/auth/internal/repository"
 	"eventify/auth/internal/service"
+	"eventify/common/grpc/interceptors"
 	"eventify/common/logger"
 	"eventify/common/postgres"
 	"eventify/common/redis"
@@ -16,6 +17,7 @@ import (
 	"net"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -31,7 +33,11 @@ func main() {
 
 	authRepo := repository.NewAuthRepository(pool, redisClient)
 	authService := service.NewAuthService(authRepo, cfg.Auth.SecretKey)
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			interceptors.TimeoutInterceptor(4 * time.Second),
+		),
+	)
 	grpcHandler := handler.NewAuthGRPCServer(authService)
 
 	// Register gRPC server
