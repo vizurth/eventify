@@ -33,7 +33,19 @@ func NewClient(ctx context.Context, cfg Config) (*redis.Client, error) {
 
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
-	if err := db.Ping(ctx).Err(); err != nil {
+	// retry
+	var err error
+	retries := 3
+	for i := 0; i < retries; i++ {
+		err = db.Ping(ctx).Err()
+		if err == nil {
+			break
+		}
+		log.Warn(ctx, "failed to ping redis, retrying...", zap.Error(err))
+		time.Sleep(time.Duration(i+1) * time.Second)
+	}
+
+	if err != nil {
 		log.Error(ctx, "failed to connect to redis", zap.Error(err))
 		return nil, fmt.Errorf("failed to connect to redis: %w", err)
 	}

@@ -27,7 +27,7 @@ redis:
   password: ""
   user: ""
   db: 0
-  max_retries: 3
+  max_retries: 5
   dial_timeout: 5
   timeout: 3
 
