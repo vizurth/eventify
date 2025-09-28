@@ -14,6 +14,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"net"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -41,9 +43,25 @@ func main() {
 		log.Fatal(ctx, "failed to listen for gRPC", zap.Error(err))
 	}
 
-	log.Info(ctx, fmt.Sprintf("gRPC server listening on port %d", cfg.Auth.Port))
-	if err = grpcServer.Serve(lis); err != nil {
-		log.Fatal(ctx, "gRPC server failed", zap.Error(err))
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		log.Info(ctx, fmt.Sprintf("gRPC server listening on port %d", cfg.Auth.Port))
+		if err = grpcServer.Serve(lis); err != nil {
+			log.Fatal(ctx, "gRPC server failed", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info(ctx, "shutting down gRPC server...")
+
+	grpcServer.GracefulStop()
+	pool.Close()
+
+	if err := redisClient.Close(); err != nil {
+		log.Fatal(ctx, "failed to close redis client", zap.Error(err))
 	}
-	_ = make(map[int]int, 0)
+
+	log.Info(ctx, "successfully shutdown gRPC server")
 }

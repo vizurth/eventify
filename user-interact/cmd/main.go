@@ -13,6 +13,8 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"net"
+	"os/signal"
+	"syscall"
 )
 
 func main() {
@@ -37,8 +39,21 @@ func main() {
 		log.Fatal(ctx, "failed to listen for gRPC", zap.Error(err))
 	}
 
-	log.Info(ctx, fmt.Sprintf("gRPC server listening on port %d", cfg.UserInteract.Port))
-	if err = grpcServer.Serve(lis); err != nil {
-		log.Fatal(ctx, "gRPC server failed", zap.Error(err))
-	}
+	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
+	defer stop()
+
+	go func() {
+		log.Info(ctx, fmt.Sprintf("gRPC server listening on port %d", cfg.UserInteract.Port))
+		if err = grpcServer.Serve(lis); err != nil {
+			log.Fatal(ctx, "gRPC server failed", zap.Error(err))
+		}
+	}()
+
+	<-ctx.Done()
+	log.Info(ctx, "shutting down gRPC server...")
+
+	grpcServer.GracefulStop()
+	pool.Close()
+
+	log.Info(ctx, "gRPC server shutdown successfully")
 }
