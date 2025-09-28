@@ -37,12 +37,14 @@ Eventify позволяет пользователям:
 - **JWT**: golang-jwt для аутентификации
 - **Kafka**: segmentio/kafka-go для асинхронных уведомлений
 - **Хеширование**: golang.org/x/crypto для паролей
+- **Кэш**: Redis (go-redis)
 - **Контейнеризация**: Docker & Docker Compose
 
 ### Инфраструктура
 - **Docker** — контейнеризация
 - **Docker Compose** — оркестрация сервисов
 - **Goose** — миграции базы данных
+- **Redis** — кэширование
 - **golangci-lint** — статический анализ кода
 
 ## Структура проекта
@@ -106,6 +108,7 @@ eventify/
 │   ├── kafka/
 │   ├── logger/
 │   ├── postgres/
+│   ├── redis/
 │   └── retry/
 │
 ├── configs/                       # Конфигурационные файлы
@@ -123,6 +126,7 @@ eventify/
 - Go 1.24.0+
 - PostgreSQL 14+
 - Kafka 3.0+
+- Redis 6+
 - Docker & Docker Compose
 - Make
 
@@ -171,8 +175,8 @@ make down
 
 #### 5. Локальная разработка
 ```bash
-# Запуск базы данных
-docker-compose -f build/docker/docker-compose.yaml up -d postgres kafka
+# Запуск инфраструктуры (пример)
+docker-compose -f build/docker/docker-compose.yaml up -d postgres kafka redis
 
 # Применение миграций
 make local-migration-up
@@ -307,22 +311,3 @@ make lint
 ```bash
 make build-all
 ```
-
-## Вклад в проект
-
-1. Форкните репозиторий
-2. Создайте ветку для новой функции (`git checkout -b feature/amazing-feature`)
-3. Зафиксируйте изменения (`git commit -m 'Add amazing feature'`)
-4. Отправьте в ветку (`git push origin feature/amazing-feature`)
-5. Откройте Pull Request
-
-## Лицензия
-
-Этот проект распространяется под лицензией MIT. См. файл `LICENSE` для получения дополнительной информации.
-
-## Поддержка
-
-Если у вас есть вопросы или предложения:
-1. Проверьте [Issues](https://github.com/your-repo/eventify/issues)
-2. Создайте новое Issue с подробным описанием проблемы
-3. Обратитесь к команде разработки
