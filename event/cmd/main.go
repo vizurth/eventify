@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"eventify/common/grpc/interceptors"
 	"eventify/common/logger"
 	"eventify/common/postgres"
 	"eventify/common/redis"
@@ -16,6 +17,7 @@ import (
 	"net"
 	"os/signal"
 	"syscall"
+	"time"
 )
 
 func main() {
@@ -35,7 +37,11 @@ func main() {
 	eventService := service.NewEventService(ctx, eventRepo, cfg.Kafka)
 	grpcHandler := handler.NewEventHandler(eventService)
 
-	grpcServer := grpc.NewServer()
+	grpcServer := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			interceptors.TimeoutInterceptor(4 * time.Second),
+		),
+	)
 	eventpb.RegisterEventServiceServer(grpcServer, grpcHandler)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Event.Port))
