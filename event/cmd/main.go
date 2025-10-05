@@ -2,67 +2,27 @@ package main
 
 import (
 	"context"
-	"eventify/common/grpc/interceptors"
 	"eventify/common/logger"
-	"eventify/common/postgres"
-	"eventify/common/redis"
-	eventpb "eventify/event/api"
+	"eventify/event/internal/app"
 	"eventify/event/internal/config"
-	"eventify/event/internal/handler"
-	"eventify/event/internal/repository"
-	"eventify/event/internal/service"
-	"fmt"
 	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"net"
-	"os/signal"
-	"syscall"
-	"time"
+	"os"
 )
 
 func main() {
-	cfg, _ := config.New()
-
 	ctx := context.Background()
-	ctx, _, _ = logger.New(ctx)
-	log := logger.GetOrCreateLoggerFromCtx(ctx)
-	pool, _ := postgres.New(ctx, cfg.Postgres)
-	redisClient, _ := redis.NewClient(ctx, cfg.Redis)
+	cfg, err := config.New()
 
-	eventRepo := repository.NewEventRepository(pool, redisClient)
-
-	// Kafka producer (topic: events)
-
-	eventService := service.NewEventService(ctx, eventRepo, cfg.Kafka)
-	grpcHandler := handler.NewEventHandler(eventService)
-
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(
-			interceptors.TimeoutInterceptor(4 * time.Second),
-		),
-	)
-	eventpb.RegisterEventServiceServer(grpcServer, grpcHandler)
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.Event.Port))
 	if err != nil {
-		logger.GetLoggerFromCtx(ctx).Fatal(ctx, "failed to listen for gRPC", zap.Error(err))
+		logger.GetOrCreateLoggerFromCtx(ctx).Fatal(ctx, "failed to load configuration", zap.Error(err))
 	}
 
-	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	application, err := app.New(ctx, cfg)
+	if err != nil {
+		logger.GetOrCreateLoggerFromCtx(ctx).Fatal(ctx, "failed to initialize application", zap.Error(err))
+		os.Exit(1)
+	}
 
-	go func() {
-		log.Info(ctx, "gRPC server listening on", zap.Int("port", cfg.Event.Port))
-		if err := grpcServer.Serve(lis); err != nil {
-			logger.GetLoggerFromCtx(ctx).Fatal(ctx, "gRPC server failed", zap.Error(err))
-		}
-	}()
+	application.Run(ctx)
 
-	<-ctx.Done()
-	log.Info(ctx, "shutting down gRPC server...")
-
-	grpcServer.GracefulStop()
-	pool.Close()
-
-	log.Info(ctx, "gRPC server shutdown successfully")
 }
