@@ -15,13 +15,13 @@ type Config struct {
 	Notification NotificationConfig `yaml:"notification"`
 }
 
-func New() (Config, error) {
+func New() (*Config, error) {
 	var config Config
 	if err := cleanenv.ReadConfig("../configs/config.yaml", &config); err != nil {
 		fmt.Println(err)
 		if err := cleanenv.ReadEnv(&config); err != nil {
-			return Config{}, fmt.Errorf("error reading configs: %w", err)
+			return &Config{}, fmt.Errorf("error reading configs: %w", err)
 		}
 	}
-	return config, nil
+	return &config, nil
 }
