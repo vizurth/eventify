@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"eventify/common/logger"
 	"eventify/user-interact/internal/app"
 	"eventify/user-interact/internal/config"
