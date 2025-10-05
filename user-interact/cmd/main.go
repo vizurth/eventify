@@ -1,65 +1,26 @@
 package main
 
 import (
-	"context"
-	"eventify/common/grpc/interceptors"
 	"eventify/common/logger"
-	"eventify/common/postgres"
-	uipb "eventify/user-interact/api"
+	"eventify/user-interact/internal/app"
 	"eventify/user-interact/internal/config"
-	"eventify/user-interact/internal/handler"
-	"eventify/user-interact/internal/repository"
-	"eventify/user-interact/internal/service"
-	"fmt"
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-	"net"
-	"os/signal"
-	"syscall"
-	"time"
+	"os"
 )
 
 func main() {
-	cfg, _ := config.New()
-
 	ctx := context.Background()
-	ctx, _, _ = logger.New(ctx)
+	cfg, err := config.New()
 
-	log := logger.GetLoggerFromCtx(ctx)
-
-	pool, _ := postgres.New(ctx, cfg.Postgres)
-
-	uiRepo := repository.NewUserInteractionRepository(pool)
-	uiService := service.NewUserInteractionService(ctx, uiRepo, cfg.Kafka)
-	grpcServer := grpc.NewServer(
-		grpc.UnaryInterceptor(
-			interceptors.TimeoutInterceptor(4 * time.Second),
-		),
-	)
-	grpcHandler := handler.NewUserInteractionHandler(uiService)
-
-	uipb.RegisterUserInteractionServiceServer(grpcServer, grpcHandler)
-
-	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", cfg.UserInteract.Port))
 	if err != nil {
-		log.Fatal(ctx, "failed to listen for gRPC", zap.Error(err))
+		logger.GetOrCreateLoggerFromCtx(ctx).Fatal(ctx, "failed to load config")
 	}
 
-	ctx, stop := signal.NotifyContext(ctx, syscall.SIGINT, syscall.SIGTERM)
-	defer stop()
+	application, err := app.New(ctx, cfg)
+	if err != nil {
+		logger.GetOrCreateLoggerFromCtx(ctx).Fatal(ctx, "failed to initialize application")
+		os.Exit(1)
+	}
 
-	go func() {
-		log.Info(ctx, fmt.Sprintf("gRPC server listening on port %d", cfg.UserInteract.Port))
-		if err = grpcServer.Serve(lis); err != nil {
-			log.Fatal(ctx, "gRPC server failed", zap.Error(err))
-		}
-	}()
+	application.Run(ctx)
 
-	<-ctx.Done()
-	log.Info(ctx, "shutting down gRPC server...")
-
-	grpcServer.GracefulStop()
-	pool.Close()
-
-	log.Info(ctx, "gRPC server shutdown successfully")
 }

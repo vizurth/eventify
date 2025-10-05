@@ -20,16 +20,16 @@ type Config struct {
 	Kafka        kafka.Config       `yaml:"kafka"`
 }
 
-func New() (Config, error) {
+func New() (*Config, error) {
 	var config Config
 	// docker workdir app/
 	// local workdir delivery-tracker/auth
 	if err := cleanenv.ReadConfig("../configs/config.yaml", &config); err != nil {
 		fmt.Println(err)
 		if err := cleanenv.ReadEnv(&config); err != nil {
-			return Config{}, fmt.Errorf("error reading configs: %w", err)
+			return &Config{}, fmt.Errorf("error reading configs: %w", err)
 		}
 	}
 
-	return config, nil
+	return &config, nil
 }
