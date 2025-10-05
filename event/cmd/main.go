@@ -26,7 +26,6 @@ func main() {
 	ctx := context.Background()
 	ctx, _, _ = logger.New(ctx)
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
-	пше
 	pool, _ := postgres.New(ctx, cfg.Postgres)
 	redisClient, _ := redis.NewClient(ctx, cfg.Redis)
 
