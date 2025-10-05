@@ -15,7 +15,7 @@ import (
 )
 
 type UserInteractionService struct {
-	repo *repository.UserInteractionRepository
+	repo repository.Repository
 
 	reviewCreatedW       *mykafka.Writer
 	reviewUpdatedW       *mykafka.Writer
@@ -24,7 +24,7 @@ type UserInteractionService struct {
 	registrationDeleteW  *mykafka.Writer
 }
 
-func NewUserInteractionService(ctx context.Context, repo *repository.UserInteractionRepository, cfg mykafka.Config) *UserInteractionService {
+func NewUserInteractionService(ctx context.Context, repo repository.Repository, cfg mykafka.Config) *UserInteractionService {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	topics := []string{

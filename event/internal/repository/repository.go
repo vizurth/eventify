@@ -20,7 +20,7 @@ type EventRepository struct {
 	redis *redis.Client
 }
 
-func NewEventRepository(db *pgxpool.Pool, redis *redis.Client) *EventRepository {
+func NewEventRepository(db *pgxpool.Pool, redis *redis.Client) Repository {
 	return &EventRepository{db: db, psql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar), redis: redis}
 }
 
