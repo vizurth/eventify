@@ -14,7 +14,7 @@ type UserInteractionRepository struct {
 	pgql sq.StatementBuilderType
 }
 
-func NewUserInteractionRepository(db *pgxpool.Pool) *UserInteractionRepository {
+func NewUserInteractionRepository(db *pgxpool.Pool) Repository {
 	return &UserInteractionRepository{
 		db:   db,
 		pgql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar),

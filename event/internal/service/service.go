@@ -15,14 +15,14 @@ import (
 )
 
 type EventService struct {
-	repo          *repository.EventRepository
+	repo          repository.Repository
 	eventCreatedW *mykafka.Writer
 	//eventUpdatedW *mykafka.Writer
 	//eventDeletedW *mykafka.Writer
 }
 
 // NewEventService инициализирует сервис, создаёт топики и продюсеров
-func NewEventService(ctx context.Context, repo *repository.EventRepository, cfg mykafka.Config) *EventService {
+func NewEventService(ctx context.Context, repo repository.Repository, cfg mykafka.Config) *EventService {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	// Создаем топики с повторными попытками
