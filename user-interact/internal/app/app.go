@@ -78,7 +78,6 @@ func (a *App) Run(ctx context.Context) {
 
 	<-ctx.Done()
 	a.log.Info(ctx, "shutting down gRPC server...")
-	пше
 	a.Shutdown(ctx)
 }
 
