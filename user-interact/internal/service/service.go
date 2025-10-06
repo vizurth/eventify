@@ -24,7 +24,7 @@ type UserInteractionService struct {
 	registrationDeleteW  *mykafka.Writer
 }
 
-func NewUserInteractionService(ctx context.Context, repo repository.Repository, cfg mykafka.Config) *UserInteractionService {
+func NewUserInteractionService(ctx context.Context, repo repository.Repository, cfg mykafka.Config) Service {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	topics := []string{

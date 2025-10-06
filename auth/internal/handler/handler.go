@@ -12,10 +12,10 @@ import (
 // AuthGRPCServer provides gRPC endpoints backed by AuthService.
 type AuthGRPCServer struct {
 	authpb.UnimplementedAuthServiceServer
-	service *service.AuthService
+	service service.Service
 }
 
-func NewAuthGRPCServer(s *service.AuthService) *AuthGRPCServer {
+func NewAuthGRPCServer(s service.Service) *AuthGRPCServer {
 	return &AuthGRPCServer{service: s}
 }
 

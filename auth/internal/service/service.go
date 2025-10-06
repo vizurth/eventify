@@ -28,7 +28,7 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), nil
 }
 
-func NewAuthService(repo repository.Repository, secret string) *AuthService {
+func NewAuthService(repo repository.Repository, secret string) Service {
 	return &AuthService{
 		repo:   repo,
 		secret: secret,

@@ -22,7 +22,7 @@ type EventService struct {
 }
 
 // NewEventService инициализирует сервис, создаёт топики и продюсеров
-func NewEventService(ctx context.Context, repo repository.Repository, cfg mykafka.Config) *EventService {
+func NewEventService(ctx context.Context, repo repository.Repository, cfg mykafka.Config) Service {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	// Создаем топики с повторными попытками

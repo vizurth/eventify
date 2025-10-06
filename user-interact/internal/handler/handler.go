@@ -10,10 +10,10 @@ import (
 
 type UserInteractionHandler struct {
 	uipb.UnimplementedUserInteractionServiceServer
-	service *service.UserInteractionService
+	service service.Service
 }
 
-func NewUserInteractionHandler(service *service.UserInteractionService) *UserInteractionHandler {
+func NewUserInteractionHandler(service service.Service) *UserInteractionHandler {
 	return &UserInteractionHandler{service: service}
 }
 

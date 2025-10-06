@@ -13,10 +13,10 @@ import (
 
 type EventHandler struct {
 	eventpb.UnimplementedEventServiceServer
-	service *service.EventService
+	service service.Service
 }
 
-func NewEventHandler(s *service.EventService) *EventHandler {
+func NewEventHandler(s service.Service) *EventHandler {
 	return &EventHandler{service: s}
 }
 
