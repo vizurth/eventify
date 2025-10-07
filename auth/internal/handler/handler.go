@@ -7,6 +7,8 @@ import (
 	"eventify/common/logger"
 	"fmt"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // AuthGRPCServer provides gRPC endpoints backed by AuthService.
@@ -25,6 +27,10 @@ func (s *AuthGRPCServer) Register(ctx context.Context, req *authpb.RegisterReque
 
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
+	if err := req.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	if err := s.service.RegisterUser(ctx, modelReq); err != nil {
 		log.Error(ctx, "register user failed", zap.Error(err))
 		return nil, fmt.Errorf("register user failed: %w", err)
@@ -37,6 +43,10 @@ func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*
 	modelReq := toLoginModel(req)
 
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	if err := req.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	access, refresh, err := s.service.LoginUser(ctx, modelReq)
 	if err != nil {
@@ -66,6 +76,10 @@ func (s *AuthGRPCServer) Logout(ctx context.Context, req *authpb.RefreshRequest)
 // Refresh handler refresh access token
 func (s *AuthGRPCServer) Refresh(ctx context.Context, req *authpb.RefreshRequest) (*authpb.LoginResponse, error) {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	if err := req.ValidateAll(); err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	accessToken, err := s.service.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
