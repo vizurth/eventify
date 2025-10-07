@@ -8,6 +8,8 @@ import (
 	"eventify/event/internal/service"
 	"fmt"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"strconv"
 )
 
@@ -23,6 +25,12 @@ func NewEventHandler(s service.Service) *EventHandler {
 func (h *EventHandler) CreateEvent(ctx context.Context, req *eventpb.CreateEventRequest) (*eventpb.CreateEventResponse, error) {
 	modelReq := toModelCreate(req)
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	if err := req.Validate(); err != nil {
+		log.Error(ctx, "create event handler", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	if err := h.service.CreateEvent(ctx, modelReq); err != nil {
 		log.Error(ctx, "create event handler", zap.Error(err))
 		return nil, fmt.Errorf("create event handler: %w", err)
@@ -33,7 +41,12 @@ func (h *EventHandler) CreateEvent(ctx context.Context, req *eventpb.CreateEvent
 func (h *EventHandler) ListEvents(ctx context.Context, req *eventpb.ListEventsRequest) (*eventpb.ListEventsResponse, error) {
 	var events []models.EventResp
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
-	log.Info(ctx, "list events")
+
+	if err := req.ValidateAll(); err != nil {
+		log.Error(ctx, "list event handler", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	if err := h.service.GetEvents(ctx, &events); err != nil {
 		log.Error(ctx, "list events handler", zap.Error(err))
 		return nil, fmt.Errorf("list events handler: %w", err)
@@ -45,6 +58,11 @@ func (h *EventHandler) GetEvent(ctx context.Context, req *eventpb.GetEventReques
 	var e models.EventResp
 
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	if err := req.Validate(); err != nil {
+		log.Error(ctx, "get event handler", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
 
 	if err := h.service.GetEventByID(ctx, int(req.GetId()), &e); err != nil {
 		log.Error(ctx, "get events handler", zap.Error(err))
