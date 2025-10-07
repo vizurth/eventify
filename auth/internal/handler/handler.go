@@ -28,6 +28,7 @@ func (s *AuthGRPCServer) Register(ctx context.Context, req *authpb.RegisterReque
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := req.ValidateAll(); err != nil {
+		log.Error(ctx, "get event handler:", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -45,6 +46,7 @@ func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := req.ValidateAll(); err != nil {
+		log.Error(ctx, "get event handler:", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
@@ -78,6 +80,7 @@ func (s *AuthGRPCServer) Refresh(ctx context.Context, req *authpb.RefreshRequest
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := req.ValidateAll(); err != nil {
+		log.Error(ctx, "get event handler:", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
