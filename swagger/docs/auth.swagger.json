@@ -10,7 +10,7 @@
       "name": "AuthService"
     }
   ],
-  "host": "localhost:9097",
+  "host": "localhost/api",
   "schemes": [
     "http"
   ],

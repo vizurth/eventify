@@ -70,9 +70,6 @@ services:
       context: ../../
       dockerfile: build/docker/gateway.Dockerfile
     restart: on-failure
-    container_name: gateway-service
-    ports:
-      - "9097:9097"
     depends_on:
       - postgres
       - kafka
