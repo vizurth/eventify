@@ -6,6 +6,7 @@ option go_package = "eventify/user-interaction/api;uipb";
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "validate/validate.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
@@ -71,60 +72,80 @@ service UserInteractionService {
 
 // Reviews
 message CreateReviewRequest {
-  uint64 event_id = 1;
-  uint64 user_id = 2;
-  string username = 3;
-  uint32 rating = 4;
-  string comment = 5;
+  uint64 event_id = 1 [(validate.rules).uint64 = {gt: 0}];
+  uint64 user_id = 2 [(validate.rules).uint64 = {gt: 0}];
+  string username = 3 [(validate.rules).string = {
+    min_len:3,
+    max_len: 32,
+    pattern: "^[a-zA-Z0-9_]+$"
+  }];
+  uint32 rating = 4 [(validate.rules).uint32 = {gte: 1, lte: 5}];
+  string comment = 5 [(validate.rules).string = {min_len: 1, max_len: 500}];
 }
 
 message CreateReviewResponse { string message = 1; }
 
-message ListReviewsByEventRequest { uint64 event_id = 1; }
-message ListReviewsByEventResponse { repeated Review reviews = 1; }
+message ListReviewsByEventRequest {
+  uint64 event_id = 1 [(validate.rules).uint64 = {gt: 0}];
+}
+message ListReviewsByEventResponse {
+  repeated Review reviews = 1 [(validate.rules).repeated = {min_items: 0, max_items: 100}];
+}
 
 message UpdateReviewRequest {
-  uint64 review_id = 1; // path
-  uint32 rating = 2;
-  string comment = 3;
-  uint64 user_id = 4;
-  string username = 5;
-  uint64 event_id = 6;
+  uint64 review_id = 1 [(validate.rules).uint64 = {gt: 0}];
+  uint32 rating = 2 [(validate.rules).uint32 = {gte: 1, lte: 5}];
+  string comment = 3 [(validate.rules).string = {min_len: 1, max_len: 500}];
+  uint64 user_id = 4 [(validate.rules).uint64 = {gt: 0}];
+  string username = 5 [(validate.rules).string = {min_len: 3, max_len: 32}];
+  uint64 event_id = 6 [(validate.rules).uint64 = {gt: 0}];
 }
+
 message UpdateReviewResponse { string message = 1; }
 
-message DeleteReviewRequest { uint64 review_id = 1; }
+message DeleteReviewRequest {
+  uint64 review_id = 1 [(validate.rules).uint64 = {gt: 0}];
+}
+
 message DeleteReviewResponse { string message = 1; }
 
 message Review {
-  uint64 id = 1;
-  uint64 event_id = 2;
-  uint64 user_id = 3;
-  string username = 4;
-  uint32 rating = 5;
-  string comment = 6;
-  string created_at = 7; // RFC3339
-  string updated_at = 8; // RFC3339 or empty
+  uint64 id = 1 [(validate.rules).uint64 = {gt: 0}];
+  uint64 event_id = 2 [(validate.rules).uint64 = {gt: 0}];
+  uint64 user_id = 3 [(validate.rules).uint64 = {gt: 0}];
+  string username = 4 [(validate.rules).string = {min_len: 3, max_len: 32}];
+  uint32 rating = 5 [(validate.rules).uint32 = {gte: 1, lte: 5}];
+  string comment = 6 [(validate.rules).string = {min_len: 1, max_len: 500}];
+  string created_at = 7 [(validate.rules).string = {pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"}];
+  string updated_at = 8 [(validate.rules).string = {pattern: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$", ignore_empty: true}];
 }
 
 // Registrations
+
 message RegisterForEventRequest {
-  uint64 event_id = 1; // path
-  uint64 user_id = 2;  // body
-  string username = 3; // body
+  uint64 event_id = 1 [(validate.rules).uint64 = {gt: 0}];
+  uint64 user_id = 2 [(validate.rules).uint64 = {gt: 0}];
+  string username = 3 [(validate.rules).string = {min_len: 3, max_len: 32}];
 }
+
 message RegisterForEventResponse { string message = 1; }
 
 message DeleteRegistrationRequest {
-  uint64 event_id = 1; // path
-  uint64 user_id = 2;  // query or body not used by DELETE mapping; use query param
+  uint64 event_id = 1 [(validate.rules).uint64 = {gt: 0}];
+  uint64 user_id = 2 [(validate.rules).uint64 = {gt: 0}];
 }
+
 message DeleteRegistrationResponse { string message = 1; }
 
-message ListRegistrationsRequest { uint64 event_id = 1; }
-message ListRegistrationsResponse { repeated Participant participants = 1; }
+message ListRegistrationsRequest {
+  uint64 event_id = 1 [(validate.rules).uint64 = {gt: 0}];
+}
+
+message ListRegistrationsResponse {
+  repeated Participant participants = 1 [(validate.rules).repeated = {min_items: 0, max_items: 100}];
+}
 
 message Participant {
-  uint64 id = 1; // user_id
-  string username = 2;
+  uint64 id = 1 [(validate.rules).uint64 = {gt: 0}];
+  string username = 2 [(validate.rules).string = {min_len: 3, max_len: 32}];
 }

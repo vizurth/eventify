@@ -6,6 +6,7 @@ option go_package = "eventify/auth/api;authpb";
 
 import "google/api/annotations.proto";
 import "protoc-gen-openapiv2/options/annotations.proto";
+import "validate/validate.proto";
 
 option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
   info: {
@@ -48,10 +49,22 @@ service AuthService {
 }
 
 message RegisterRequest {
-	string username = 1;
-	string email = 2;
-	string password = 3;
-	string role = 4;
+	string username = 1 [(validate.rules).string = {
+		min_len: 3,
+		max_len: 32,
+		pattern: "^[a-zA-Z0-9_]+$"
+	}];
+	string email = 2 [(validate.rules).string ={
+		email: true
+	}];
+	string password = 3 [(validate.rules).string = {
+		min_len: 8,
+		max_len: 64
+	}];
+
+	string role = 4 [(validate.rules).string = {
+		in: ["user", "admin"]
+	}];
 }
 
 message RegisterResponse {
@@ -59,9 +72,19 @@ message RegisterResponse {
 }
 
 message LoginRequest {
-	string username = 1; // либо username
-	string email = 2;    // либо email
-	string password = 3;
+	string username = 1 [(validate.rules).string = {
+		ignore_empty: true,
+		pattern: "^[a-zA-Z0-9_]+$"
+	}];
+
+	string email = 2 [(validate.rules).string = {
+		ignore_empty: true,
+		email: true
+	}];
+
+	string password = 3 [(validate.rules).string = {
+		min_len: 8
+	}];
 }
 
 message LoginResponse {
@@ -70,8 +93,11 @@ message LoginResponse {
 }
 
 message RefreshRequest {
-	string refresh_token = 1;
+	string refresh_token = 1 [(validate.rules).string = {
+		min_len: 10
+	}];
 }
+
 
 message  LogoutResponse {
 	string message = 1;

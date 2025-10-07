@@ -2,10 +2,14 @@ package handler
 
 import (
 	"context"
+	"eventify/common/logger"
 	uipb "eventify/user-interact/api"
 	"eventify/user-interact/internal/models"
 	"eventify/user-interact/internal/service"
 	"fmt"
+	"go.uber.org/zap"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type UserInteractionHandler struct {
@@ -20,6 +24,14 @@ func NewUserInteractionHandler(service service.Service) *UserInteractionHandler 
 // Reviews
 func (h *UserInteractionHandler) CreateReview(ctx context.Context, req *uipb.CreateReviewRequest) (*uipb.CreateReviewResponse, error) {
 	modelReq := toModelCreateReview(req)
+
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	if err := req.ValidateAll(); err != nil {
+		log.Error(ctx, "create review:", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	if err := h.service.CreateNewReviews(ctx, modelReq); err != nil {
 		return nil, fmt.Errorf("create review handler: %w", err)
 	}
@@ -28,6 +40,7 @@ func (h *UserInteractionHandler) CreateReview(ctx context.Context, req *uipb.Cre
 
 func (h *UserInteractionHandler) ListReviewsByEvent(ctx context.Context, req *uipb.ListReviewsByEventRequest) (*uipb.ListReviewsByEventResponse, error) {
 	var reviews []models.ReviewResp
+
 	if err := h.service.GetCurrentReviewsByEventID(ctx, int(req.GetEventId()), &reviews); err != nil {
 		return nil, fmt.Errorf("list reviews handler: %w", err)
 	}
@@ -36,6 +49,14 @@ func (h *UserInteractionHandler) ListReviewsByEvent(ctx context.Context, req *ui
 
 func (h *UserInteractionHandler) UpdateReview(ctx context.Context, req *uipb.UpdateReviewRequest) (*uipb.UpdateReviewResponse, error) {
 	modelReq := toModelUpdateReview(req)
+
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
+
+	if err := req.ValidateAll(); err != nil {
+		log.Error(ctx, "create review:", zap.Error(err))
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
 	if err := h.service.UpdateReview(ctx, int(req.GetReviewId()), modelReq); err != nil {
 		return nil, fmt.Errorf("update review handler: %w", err)
 	}
