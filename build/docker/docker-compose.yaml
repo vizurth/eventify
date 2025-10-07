@@ -70,15 +70,24 @@ services:
       context: ../../
       dockerfile: build/docker/gateway.Dockerfile
     restart: on-failure
-    container_name: gateway-service
-    ports:
-      - "9097:9097"
     depends_on:
       - postgres
       - kafka
       - auth
       - event
       - user-interact
+
+  nginx:
+    image: nginx:stable-alpine
+    container_name: eventify-nginx
+    restart: always
+    ports:
+      - "80:80" # Открываем порт 80 для внешнего доступа
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro # Монтируем конфигурационный файл
+    depends_on:
+      - gateway
+      - swagger-ui
 
   swagger-ui:
     image: swaggerapi/swagger-ui:latest

@@ -13,7 +13,7 @@ option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_swagger) = {
     version: "1.0"
     description: "User Interaction service for users"
   };
-  host: "localhost:9097";
+  host: "localhost/api";
   schemes: HTTP;
   consumes: "application/json";
   produces: "application/json";

@@ -4,7 +4,7 @@ include configs/.env
 COMPOSE_PROJECT=build/docker/docker-compose.yaml
 # Запуск всех сервисов
 up:
-	docker-compose -f $(COMPOSE_PROJECT) up -d --build
+	docker-compose -f $(COMPOSE_PROJECT) up -d --build --scale gateway=3
 
 # Остановка всех сервисов
 down:

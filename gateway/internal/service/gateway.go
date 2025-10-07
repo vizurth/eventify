@@ -93,7 +93,11 @@ func (g *GatewayService) Start() error {
 	})
 
 	// Регистрируем маршруты с CORS и JWT middleware
-	mux.Handle("/", c.Handler(middleware.AuthMiddleware(gwmux, g.logger)))
+	handler := middleware.AuthMiddleware(gwmux, g.logger)     // JWT middleware
+	handler = middleware.LoggingMiddleware(handler, g.logger) // Логирование
+	handler = c.Handler(handler)                              // CORS
+
+	mux.Handle("/", handler)
 
 	// Запускаем сервер
 	addr := fmt.Sprintf(":%d", g.config.Server.Port)

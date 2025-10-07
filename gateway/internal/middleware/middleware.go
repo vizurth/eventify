@@ -45,3 +45,39 @@ func AuthMiddleware(next http.Handler, log *logger.Logger) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+func LoggingMiddleware(next http.Handler, logger *logger.Logger) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Обертка для записи статуса ответа
+		lrw := &loggingResponseWriter{ResponseWriter: w, statusCode: http.StatusOK}
+
+		// Логируем входящий запрос
+		logger.Info(r.Context(), "Incoming request",
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.Path),
+			zap.String("remote_addr", r.RemoteAddr),
+		)
+
+		// Выполняем следующий хендлер
+		next.ServeHTTP(lrw, r)
+
+		// Логируем результат запроса
+		logger.Info(r.Context(), "Request completed",
+			zap.String("method", r.Method),
+			zap.String("path", r.URL.Path),
+			zap.Int("status", lrw.statusCode),
+			zap.String("remote_addr", r.RemoteAddr),
+		)
+	})
+}
+
+// Обертка для захвата статус-кода
+type loggingResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func (lrw *loggingResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
