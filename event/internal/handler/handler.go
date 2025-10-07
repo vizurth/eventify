@@ -33,6 +33,7 @@ func (h *EventHandler) CreateEvent(ctx context.Context, req *eventpb.CreateEvent
 func (h *EventHandler) ListEvents(ctx context.Context, req *eventpb.ListEventsRequest) (*eventpb.ListEventsResponse, error) {
 	var events []models.EventResp
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
+	log.Info(ctx, "list events")
 	if err := h.service.GetEvents(ctx, &events); err != nil {
 		log.Error(ctx, "list events handler", zap.Error(err))
 		return nil, fmt.Errorf("list events handler: %w", err)
