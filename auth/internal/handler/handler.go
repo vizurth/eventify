@@ -5,7 +5,6 @@ import (
 	authpb "eventify/auth/api"
 	"eventify/auth/internal/service"
 	"eventify/common/logger"
-	"fmt"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -28,13 +27,13 @@ func (s *AuthGRPCServer) Register(ctx context.Context, req *authpb.RegisterReque
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := req.ValidateAll(); err != nil {
-		log.Error(ctx, "get event handler:", zap.Error(err))
+		log.Error(ctx, "register handler: validation failed", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if err := s.service.RegisterUser(ctx, modelReq); err != nil {
-		log.Error(ctx, "register user failed", zap.Error(err))
-		return nil, fmt.Errorf("register user failed: %w", err)
+		log.Error(ctx, "register handler: register user failed", zap.Error(err))
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &authpb.RegisterResponse{Message: "User registered"}, nil
 }
@@ -46,14 +45,14 @@ func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := req.ValidateAll(); err != nil {
-		log.Error(ctx, "get event handler:", zap.Error(err))
+		log.Error(ctx, "login handler: validation failed", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	access, refresh, err := s.service.LoginUser(ctx, modelReq)
 	if err != nil {
-		log.Error(ctx, "login user failed", zap.Error(err))
-		return nil, fmt.Errorf("login user failed: %w", err)
+		log.Error(ctx, "login handler: login user failed", zap.Error(err))
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 	return &authpb.LoginResponse{
 		AccessToken:  access,
@@ -61,13 +60,13 @@ func (s *AuthGRPCServer) Login(ctx context.Context, req *authpb.LoginRequest) (*
 	}, nil
 }
 
-// Logout handler user logout and return success message
+// Logout handles user logout and returns success message.
 func (s *AuthGRPCServer) Logout(ctx context.Context, req *authpb.RefreshRequest) (*authpb.LogoutResponse, error) {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := s.service.Logout(ctx, req.RefreshToken); err != nil {
-		log.Error(ctx, "logout failed", zap.Error(err))
-		return nil, fmt.Errorf("logout user failed: %w", err)
+		log.Error(ctx, "logout handler: failed", zap.Error(err))
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &authpb.LogoutResponse{
@@ -75,19 +74,19 @@ func (s *AuthGRPCServer) Logout(ctx context.Context, req *authpb.RefreshRequest)
 	}, nil
 }
 
-// Refresh handler refresh access token
+// Refresh handles access token refresh.
 func (s *AuthGRPCServer) Refresh(ctx context.Context, req *authpb.RefreshRequest) (*authpb.LoginResponse, error) {
 	log := logger.GetOrCreateLoggerFromCtx(ctx)
 
 	if err := req.ValidateAll(); err != nil {
-		log.Error(ctx, "get event handler:", zap.Error(err))
+		log.Error(ctx, "refresh handler: validation failed", zap.Error(err))
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	accessToken, err := s.service.RefreshToken(ctx, req.RefreshToken)
 	if err != nil {
-		log.Error(ctx, "refresh token failed", zap.Error(err))
-		return nil, fmt.Errorf("refresh token failed: %w", err)
+		log.Error(ctx, "refresh handler: failed", zap.Error(err))
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &authpb.LoginResponse{

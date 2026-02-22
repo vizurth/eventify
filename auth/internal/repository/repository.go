@@ -4,10 +4,11 @@ import (
 	"context"
 	"eventify/common/logger"
 	"fmt"
-	sq "github.com/Masterminds/squirrel"
-	"github.com/redis/go-redis/v9"
 	"strconv"
 	"time"
+
+	sq "github.com/Masterminds/squirrel"
+	"github.com/redis/go-redis/v9"
 )
 
 type AuthRepository struct {
@@ -30,6 +31,9 @@ func (r *AuthRepository) UserExists(ctx context.Context, username, email string)
 
 	query, args, err := r.psql.Select("count(*)").
 		From("users").Where(sq.Eq{"email": email, "username": username}).ToSql()
+	if err != nil {
+		return false, fmt.Errorf("user exists repository error: %w", err)
+	}
 
 	err = r.db.QueryRow(ctx, query, args...).Scan(&count)
 
@@ -42,9 +46,15 @@ func (r *AuthRepository) UserExists(ctx context.Context, username, email string)
 
 // CreateUser create in user in users table
 func (r *AuthRepository) CreateUser(ctx context.Context, username, email, hash, role string) error {
-	query, args, err := r.psql.Insert("users").Columns("username", "email", "password_hash", "role").Values(username, email, hash, role).ToSql()
-	_, err = r.db.Exec(ctx, query, args...)
+	query, args, err := r.psql.Insert("users").
+		Columns("username", "email", "password_hash", "role").
+		Values(username, email, hash, role).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("create user repository error: %w", err)
+	}
 
+	_, err = r.db.Exec(ctx, query, args...)
 	if err != nil {
 		return fmt.Errorf("create user repository error: %w", err)
 	}
@@ -53,13 +63,15 @@ func (r *AuthRepository) CreateUser(ctx context.Context, username, email, hash, 
 
 // GetUser get user from table
 func (r *AuthRepository) GetUser(ctx context.Context, username string, hashedPassword *string, userId *int, role *string) error {
-	query, args, err := r.psql.Select("id", "password_hash", "role").From("users").Where(sq.Eq{"username": username}).ToSql()
+	query, args, err := r.psql.Select("id", "password_hash", "role").
+		From("users").
+		Where(sq.Eq{"username": username}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("get user repository error: %w", err)
+	}
 
-	// Выполняем запрос
-	row := r.db.QueryRow(ctx, query, args...)
-
-	// Сканируем результат в переданные указатели
-	err = row.Scan(userId, hashedPassword, role)
+	err = r.db.QueryRow(ctx, query, args...).Scan(userId, hashedPassword, role)
 	if err != nil {
 		return fmt.Errorf("get user repository error: %w", err)
 	}
@@ -112,17 +124,22 @@ func (r *AuthRepository) SaveRefreshToken(ctx context.Context, userId int, refre
 
 // GetRefreshTokenInfo get token from table
 func (r *AuthRepository) GetRefreshTokenInfo(ctx context.Context, token string) (int, time.Time, error) {
+	log := logger.GetOrCreateLoggerFromCtx(ctx)
+	cacheKey := fmt.Sprintf("refresh:%s", token)
+
 	// Redis
-	userIdStr, err := r.redis.Get(ctx, fmt.Sprintf("refresh:%s", token)).Result()
+	userIdStr, err := r.redis.Get(ctx, cacheKey).Result()
 	if err == nil {
 		userId, err := strconv.Atoi(userIdStr)
 		if err != nil {
 			return 0, time.Time{}, fmt.Errorf("invalid user id from redis: %w", err)
 		}
-		ttl, err := r.redis.TTL(ctx, fmt.Sprintf("refresh:%s", token)).Result()
-		expiresAt := time.Now().Add(ttl)
-		logger.GetOrCreateLoggerFromCtx(ctx).Info(ctx, "successfully get refresh token info from redis")
-		return userId, expiresAt, nil
+		ttl, err := r.redis.TTL(ctx, cacheKey).Result()
+		if err != nil {
+			return 0, time.Time{}, fmt.Errorf("get refresh token ttl from redis: %w", err)
+		}
+		log.Info(ctx, "successfully get refresh token info from redis")
+		return userId, time.Now().Add(ttl), nil
 	}
 
 	// Postgres

@@ -2,14 +2,14 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	mykafka "eventify/common/kafka"
 	"eventify/common/logger"
 	"eventify/common/retry"
 	"eventify/notification/internal/wsserver"
+	"time"
+
 	"github.com/segmentio/kafka-go"
 	"go.uber.org/zap"
-	"time"
 )
 
 type NotificationService struct {
@@ -60,6 +60,21 @@ func (s *NotificationService) Start(ctx context.Context) error {
 	return nil
 }
 
+func topicTitle(topic string) string {
+	titles := map[string]string{
+		"event-created":        "Новое событие создано",
+		"review-created":       "Новый отзыв",
+		"review-updated":       "Отзыв обновлён",
+		"review-deleted":       "Отзыв удалён",
+		"registration-created": "Новая регистрация на событие",
+		"registration-deleted": "Регистрация отменена",
+	}
+	if title, ok := titles[topic]; ok {
+		return title
+	}
+	return topic
+}
+
 func (s *NotificationService) consumeMessages(ctx context.Context, msgCh <-chan kafka.Message, reader *mykafka.Reader) {
 	for {
 		select {
@@ -75,26 +90,12 @@ func (s *NotificationService) consumeMessages(ctx context.Context, msgCh <-chan 
 			s.log.Info(ctx, "received kafka message",
 				zap.String("topic", msg.Topic),
 				zap.String("key", string(msg.Key)),
-				zap.String("value", string(msg.Value)),
 			)
-
-			var kafkaMsg any
-			if err := json.Unmarshal(msg.Value, &kafkaMsg); err != nil {
-				s.log.Error(ctx, "failed to unmarshal kafka message", zap.Error(err))
-				continue
-			}
-
-			// Преобразуем обратно в строку для WebSocket
-			msgBytes, err := json.Marshal(kafkaMsg)
-			if err != nil {
-				s.log.Error(ctx, "failed to marshal kafka message", zap.Error(err))
-				continue
-			}
 
 			wsMsg := wsserver.NotificationMessage{
 				Type:    msg.Topic,
-				Title:   "Новое событие создано",
-				Message: string(msgBytes), // теперь это строка
+				Title:   topicTitle(msg.Topic),
+				Message: string(msg.Value),
 			}
 
 			if err := s.wsServer.BroadcastMessage(wsMsg); err != nil {

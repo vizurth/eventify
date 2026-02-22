@@ -5,14 +5,14 @@ import (
 	"eventify/common/logger"
 	"eventify/gateway/internal/middleware"
 	"fmt"
+	"net/http"
+	"strings"
+
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rs/cors"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
-	"net/http"
-	"strconv"
-	"strings"
 
 	authpb "eventify/auth/api"
 	eventpb "eventify/event/api"
@@ -37,48 +37,50 @@ func (g *GatewayService) Start() error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
+
 	// Создаем gRPC соединения к сервисам
-	authConn, err := grpc.Dial(
+	authConn, err := grpc.NewClient(
 		fmt.Sprintf("%s:%d", g.config.Auth.Host, g.config.Auth.Port),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		opts...,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to connect to auth service: %v", err)
+		return fmt.Errorf("failed to connect to auth service: %w", err)
 	}
-	defer authConn.Close()
+	defer func() { _ = authConn.Close() }()
 
-	eventConn, err := grpc.Dial(
+	eventConn, err := grpc.NewClient(
 		fmt.Sprintf("%s:%d", g.config.Event.Host, g.config.Event.Port),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		opts...,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to connect to event service: %v", err)
+		return fmt.Errorf("failed to connect to event service: %w", err)
 	}
-	defer eventConn.Close()
+	defer func() { _ = eventConn.Close() }()
 
-	userInteractConn, err := grpc.Dial(
+	userInteractConn, err := grpc.NewClient(
 		fmt.Sprintf("%s:%d", g.config.UserInteract.Host, g.config.UserInteract.Port),
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		opts...,
 	)
 	if err != nil {
-		return fmt.Errorf("failed to connect to user-interact service: %v", err)
+		return fmt.Errorf("failed to connect to user-interact service: %w", err)
 	}
-	defer userInteractConn.Close()
+	defer func() { _ = userInteractConn.Close() }()
 
 	// Создаем gRPC-Gateway мультиплексор
 	gwmux := runtime.NewServeMux()
 
 	// Регистрируем сервисы
 	if err := authpb.RegisterAuthServiceHandler(ctx, gwmux, authConn); err != nil {
-		return fmt.Errorf("failed to register auth service: %v", err)
+		return fmt.Errorf("failed to register auth service: %w", err)
 	}
 
 	if err := eventpb.RegisterEventServiceHandler(ctx, gwmux, eventConn); err != nil {
-		return fmt.Errorf("failed to register event service: %v", err)
+		return fmt.Errorf("failed to register event service: %w", err)
 	}
 
 	if err := uipb.RegisterUserInteractionServiceHandler(ctx, gwmux, userInteractConn); err != nil {
-		return fmt.Errorf("failed to register user-interact service: %v", err)
+		return fmt.Errorf("failed to register user-interact service: %w", err)
 	}
 
 	// Создаем HTTP сервер
@@ -101,32 +103,32 @@ func (g *GatewayService) Start() error {
 
 	// Запускаем сервер
 	addr := fmt.Sprintf(":%d", g.config.Server.Port)
-	g.logger.Info(ctx, "Starting gateway server on port %d", zap.String("Port: ", strconv.Itoa(g.config.Server.Port)))
+	g.logger.Info(ctx, "starting gateway server", zap.Int("port", g.config.Server.Port))
 
 	return http.ListenAndServe(addr, mux)
 }
 
-func (g *GatewayService) customErrorHandler(ctx context.Context, marshaler runtime.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
-	g.logger.Error(ctx, "Gateway error: %v", zap.Error(err))
+func (g *GatewayService) customErrorHandler(ctx context.Context, marshaler runtime.Marshaler, w http.ResponseWriter, _ *http.Request, err error) {
+	g.logger.Error(ctx, "gateway error", zap.Error(err))
 
 	// Определяем HTTP статус код на основе ошибки
-	status := http.StatusInternalServerError
+	httpStatus := http.StatusInternalServerError
 	if strings.Contains(err.Error(), "not found") {
-		status = http.StatusNotFound
+		httpStatus = http.StatusNotFound
 	} else if strings.Contains(err.Error(), "invalid") {
-		status = http.StatusBadRequest
+		httpStatus = http.StatusBadRequest
 	} else if strings.Contains(err.Error(), "unauthorized") {
-		status = http.StatusUnauthorized
+		httpStatus = http.StatusUnauthorized
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(status)
+	w.WriteHeader(httpStatus)
 
 	errorResponse := map[string]interface{}{
 		"error": err.Error(),
-		"code":  status,
+		"code":  httpStatus,
 	}
 
 	response, _ := marshaler.Marshal(errorResponse)
-	w.Write(response)
+	_, _ = w.Write(response)
 }

@@ -4,25 +4,26 @@ import (
 	"context"
 	"eventify/user-interact/internal/models"
 	"fmt"
+	"time"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"time"
 )
 
 type UserInteractionRepository struct {
 	db   *pgxpool.Pool
-	pgql sq.StatementBuilderType
+	psql sq.StatementBuilderType
 }
 
 func NewUserInteractionRepository(db *pgxpool.Pool) Repository {
 	return &UserInteractionRepository{
 		db:   db,
-		pgql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
+		psql: sq.StatementBuilder.PlaceholderFormat(sq.Dollar),
 	}
 }
 
 func (r *UserInteractionRepository) CreateNewReviews(ctx context.Context, req models.ReviewReq) error {
-	sql, args, err := r.pgql.Insert("reviews").
+	sql, args, err := r.psql.Insert("reviews").
 		Columns("event_id", "user_id", "username", "rating", "comment", "updated_at").
 		Values(req.EventID, req.UserID, req.Username, req.Rating, req.Comment, nil).
 		ToSql()
@@ -38,7 +39,7 @@ func (r *UserInteractionRepository) CreateNewReviews(ctx context.Context, req mo
 }
 
 func (r *UserInteractionRepository) GetCurrentReviewsByEventID(ctx context.Context, eventId int, reviews *[]models.ReviewResp) error {
-	sql, args, err := r.pgql.Select("*").
+	sql, args, err := r.psql.Select("*").
 		From("reviews").
 		Where(sq.Eq{"event_id": eventId}).
 		ToSql()
@@ -72,7 +73,7 @@ func (r *UserInteractionRepository) GetCurrentReviewsByEventID(ctx context.Conte
 }
 
 func (r *UserInteractionRepository) UpdateReview(ctx context.Context, reviewID int, req models.ReviewReq) error {
-	sql, args, err := r.pgql.Update("reviews").
+	sql, args, err := r.psql.Update("reviews").
 		Set("rating", req.Rating).
 		Set("comment", req.Comment).
 		Set("updated_at", time.Now()).
@@ -90,7 +91,7 @@ func (r *UserInteractionRepository) UpdateReview(ctx context.Context, reviewID i
 }
 
 func (r *UserInteractionRepository) DeleteReview(ctx context.Context, reviewID int) error {
-	sql, args, err := r.pgql.Delete("reviews").
+	sql, args, err := r.psql.Delete("reviews").
 		Where(sq.Eq{"id": reviewID}).
 		ToSql()
 	if err != nil {
@@ -106,7 +107,7 @@ func (r *UserInteractionRepository) DeleteReview(ctx context.Context, reviewID i
 }
 
 func (r *UserInteractionRepository) RegistrationOnEvent(ctx context.Context, eventID, userID int, username string) error {
-	sql, args, err := r.pgql.Insert("event_participants").
+	sql, args, err := r.psql.Insert("event_participants").
 		Columns("event_id", "user_id", "username").
 		Values(eventID, userID, username).
 		ToSql()
@@ -122,7 +123,7 @@ func (r *UserInteractionRepository) RegistrationOnEvent(ctx context.Context, eve
 }
 
 func (r *UserInteractionRepository) DeleteRegistration(ctx context.Context, eventID, userID int) error {
-	sql, args, err := r.pgql.Delete("event_participants").
+	sql, args, err := r.psql.Delete("event_participants").
 		Where(sq.Eq{"event_id": eventID, "user_id": userID}).
 		ToSql()
 	if err != nil {
@@ -131,13 +132,13 @@ func (r *UserInteractionRepository) DeleteRegistration(ctx context.Context, even
 
 	_, err = r.db.Exec(ctx, sql, args...)
 	if err != nil {
-		fmt.Errorf("delete registration repo: %w", err)
+		return fmt.Errorf("delete registration repo: %w", err)
 	}
 	return nil
 }
 
 func (r *UserInteractionRepository) GetRegistrations(ctx context.Context, eventID int, registrations *[]models.ParticipantResp) error {
-	sql, args, err := r.pgql.Select("*").
+	sql, args, err := r.psql.Select("*").
 		From("event_participants").
 		Where(sq.Eq{"event_id": eventID}).
 		ToSql()

@@ -2,9 +2,10 @@ package middleware
 
 import (
 	"eventify/common/logger"
-	"go.uber.org/zap"
 	"net/http"
 	"strings"
+
+	"go.uber.org/zap"
 )
 
 func AuthMiddleware(next http.Handler, log *logger.Logger) http.Handler {
@@ -19,25 +20,29 @@ func AuthMiddleware(next http.Handler, log *logger.Logger) http.Handler {
 		// Проверяем наличие токена для всех остальных запросов
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
-			log.Warn(ctx, "Unauthorized request to %s: missing Authorization header", zap.String("path:", r.URL.Path))
+			log.Warn(ctx, "missing Authorization header", zap.String("path", r.URL.Path))
+			w.Header().Set("Content-Type", "application/json")
+			http.Error(w, `{"error":"unauthorized: missing Authorization header"}`, http.StatusUnauthorized)
 			return
 		}
 
 		// Проверяем формат токена
 		if !strings.HasPrefix(authHeader, "Bearer ") {
-			log.Warn(ctx, "Unauthorized request to %s: invalid Authorization header format", zap.String("path:", r.URL.Path))
+			log.Warn(ctx, "invalid Authorization header format", zap.String("path", r.URL.Path))
+			w.Header().Set("Content-Type", "application/json")
+			http.Error(w, `{"error":"unauthorized: invalid Authorization header format"}`, http.StatusUnauthorized)
 			return
 		}
 
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 		if token == "" {
-			log.Warn(ctx, "Unauthorized request to %s: empty token", zap.String("path:", r.URL.Path))
+			log.Warn(ctx, "empty token", zap.String("path", r.URL.Path))
+			w.Header().Set("Content-Type", "application/json")
+			http.Error(w, `{"error":"unauthorized: empty token"}`, http.StatusUnauthorized)
 			return
 		}
 
-		// Здесь можно добавить дополнительную валидацию токена
-		// Например, проверить его через auth сервис
-		log.Debug(ctx, "Authorized request to %s with token: %s", zap.String("path:", r.URL.Path), zap.String("token:", token[:10]+"..."))
+		log.Debug(ctx, "authorized request", zap.String("path", r.URL.Path))
 
 		// Передаем токен дальше в заголовке для использования в gRPC сервисах
 		r.Header.Set("X-User-Token", token)

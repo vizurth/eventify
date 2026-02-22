@@ -16,7 +16,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
-	"log"
 	"net"
 	"os/signal"
 	"syscall"
@@ -83,7 +82,7 @@ func (a *App) Run(ctx context.Context) {
 	go func() {
 		a.log.Info(ctx, fmt.Sprintf("gRPC server listening on port %d", a.config.Auth.Port))
 		if err = a.server.Serve(lis); err != nil {
-			log.Fatal(ctx, "gRPC server failed", zap.Error(err))
+			a.log.Fatal(ctx, "gRPC server failed", zap.Error(err))
 		}
 	}()
 
@@ -98,7 +97,7 @@ func (a *App) Shutdown(ctx context.Context) {
 	a.pool.Close()
 
 	if err := a.redis.Close(); err != nil {
-		log.Fatal(ctx, "failed to close redis client", zap.Error(err))
+		a.log.Fatal(ctx, "failed to close redis client", zap.Error(err))
 	}
 
 	a.log.Info(ctx, "successfully shutdown gRPC server")

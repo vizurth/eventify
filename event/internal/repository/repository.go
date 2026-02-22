@@ -6,12 +6,13 @@ import (
 	"eventify/common/logger"
 	"eventify/event/internal/models"
 	"fmt"
+	"strconv"
+	"time"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
-	"strconv"
-	"time"
 )
 
 type EventRepository struct {
@@ -25,7 +26,6 @@ func NewEventRepository(db *pgxpool.Pool, redis *redis.Client) Repository {
 }
 
 func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) error {
-	//добавляем данные в бд
 	query, args, err := r.psql.Insert("events").
 		Columns("title", "description", "category", "city", "venue", "address", "start_time", "end_time", "organizer_id", "organizer_name", "organizer_email", "status").
 		Values(req.Title,
@@ -34,26 +34,19 @@ func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) 
 			req.Location.City,
 			req.Location.Venue,
 			req.Location.Address,
-			req.StartTime, // Время начала события (в top‑level, а не в Location)
-			req.EndTime,   // Время окончания события
+			req.StartTime,
+			req.EndTime,
 			req.Organizer.ID,
 			req.Organizer.Username,
 			req.Organizer.Email,
 			req.Status).
+		Suffix("RETURNING id").
 		ToSql()
-
 	if err != nil {
 		return fmt.Errorf("create event: %w", err)
 	}
 
-	_, err = r.db.Exec(ctx, query, args...)
-
-	if err != nil {
-		return fmt.Errorf("create event: %w", err)
-	}
 	var lastEventID uint
-	query, args, err = r.psql.Select("id").From("events").OrderBy("id DESC LIMIT 1").ToSql()
-
 	err = r.db.QueryRow(ctx, query, args...).Scan(&lastEventID)
 	if err != nil {
 		return fmt.Errorf("create event: %w", err)
@@ -61,15 +54,13 @@ func (r *EventRepository) CreateEvent(ctx context.Context, req models.EventReq) 
 
 	// цикл для добавления участников в базу данных
 	for _, participant := range req.Participants {
-		query, args, err = r.psql.Insert("event_participants").
+		pQuery, pArgs, err := r.psql.Insert("event_participants").
 			Columns("event_id", "user_id", "username").
 			Values(lastEventID, participant.ID, participant.Username).ToSql()
-
 		if err != nil {
 			return fmt.Errorf("create event: create event_participants: %w", err)
 		}
-		_, err = r.db.Exec(ctx, query, args...)
-
+		_, err = r.db.Exec(ctx, pQuery, pArgs...)
 		if err != nil {
 			return fmt.Errorf("create event: create event_participants: %w", err)
 		}
